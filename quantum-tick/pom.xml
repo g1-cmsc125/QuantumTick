@@ -7,7 +7,11 @@
   <groupId>com.group1</groupId>
   <artifactId>quantum-tick</artifactId>
   <version>1.0-SNAPSHOT</version>
-
+  <description>A quantum tick application for our group lab.</description>
+  <inceptionYear>2026</inceptionYear>
+  <organization>
+    <name>Group 1</name>
+  </organization>
   <name>quantum-tick</name>
   <!-- FIXME change it to the project's website -->
   <url>http://www.example.com</url>
@@ -65,7 +69,7 @@
                         <goal>launch4j</goal>
                     </goals>
                     <configuration>
-                        <headerType>console</headerType> 
+                        <headerType>gui</headerType> 
                         <outfile>${project.build.directory}/quantum-tick.exe</outfile>
                         <jar>${project.build.directory}/${project.artifactId}-${project.version}-jar-with-dependencies.jar</jar>
                         <errTitle>Application Error</errTitle>
