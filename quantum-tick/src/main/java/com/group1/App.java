@@ -1,26 +1,37 @@
 package com.group1;
 
-import java.awt.Font;
+import javafx.application.Application;
+import javafx.concurrent.Worker;
+import javafx.scene.Scene;
+import javafx.scene.web.WebView;
+import javafx.stage.Stage;
+import netscape.javascript.JSObject;
 
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.SwingConstants;
-public class App {
-    public static void main( String[] args ){
-        createAndShowGUI();
-    }
+public class App extends Application {
 
-    private static void createAndShowGUI() {
-        JFrame frame = new JFrame("QuantumTick - Test App");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(400, 200);
-        frame.setLocationRelativeTo(null); 
-
-        JLabel label = new JLabel("QuantumTick is successfully running!", SwingConstants.CENTER);
-        label.setFont(new Font("Arial", Font.BOLD, 16));
+    @Override
+    public void start(Stage stage) {
+        WebView webView = new WebView();
         
-        frame.add(label);
-        frame.setVisible(true);
+        // Re-inject the bridge every time the page loads or changes
+        webView.getEngine().getLoadWorker().stateProperty().addListener((obs, oldState, newState) -> {
+            if (newState == Worker.State.SUCCEEDED) {
+                JSObject window = (JSObject) webView.getEngine().executeScript("window");
+                // Pass the engine to the bridge so it can send messages back!
+                window.setMember("javaApp", new QuantumBridge(webView.getEngine()));
+            }
+        });
+
+        // Load the main page
+        webView.getEngine().load(getClass().getResource("/index.html").toExternalForm());
+
+        Scene scene = new Scene(webView, 800, 600);
+        stage.setScene(scene);
+        stage.setTitle("QuantumTick");
+        stage.show();
     }
 
+    public static void main(String[] args) {
+        launch(args);
+    }
 }
