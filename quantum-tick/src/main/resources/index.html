@@ -1,25 +1,24 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
+    <title>QuantumTick</title>
 </head>
 <body>
-    <h1>QuantumTick</h1>
-    
-    <h2 id="displayBox">Waiting for Java...</h2>
-
-    <div class="btn-container">
-        <button class="btn-start" onclick="javaApp.runTest()">Test Java Connection</button>
-    </div>
-
-    <script>
-        function changeText(newText) {
-            let box = document.getElementById("displayBox");
-            box.innerText = newText;
-            
-            // Let's also make JS change the color to prove it worked!
-            box.style.color = "#00ffcc"; 
-        }
-    </script>
+    <main>
+        <div class="logo-container">
+            <img src="images\qt-logo.png" alt="quantum-tick-logo">
+        </div>
+        <h1 class="title">
+            QuantumTick
+        </h1>
+        <div class="buttons">
+            <div class="button-group">
+            <button class = "btns" id="btn-start">Start</button>
+            <button class = "btns" id="btn-how">How it works</button>
+        </div>
+    </main>
 </body>
 </html>
