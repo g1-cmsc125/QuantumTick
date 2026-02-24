@@ -93,3 +93,88 @@ main {
     box-shadow: 0 0 20px rgba(224, 80, 110, 0.4);
     transform: translateY(-2px);
 }
+
+/* about.html styling */
+body.about-page {
+    justify-content: flex-start;
+    align-items: flex-start;
+    padding: 4rem 6rem; 
+    flex-direction: column;
+}
+
+.about-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 4rem; 
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.logo-container-small {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.logo-container-small img {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+.header-title {
+    font-size: 2.8rem;
+    color: #9d7cfa;
+    font-weight: 400;
+    letter-spacing: 2px;
+}
+
+#btn-back {
+    background: linear-gradient(90deg, #0D3E31 0%, #021D16 78%);
+    border: 3px solid rgba(18, 192, 148, 0.50); 
+    color: #12C094;
+    padding: 0.6rem 2rem; /* Thinner padding than main buttons */
+    font-size: 1rem;
+}
+
+#btn-back:hover {
+    background: linear-gradient(90deg, #155e4a 0%, #043629 78%);
+    border-color: rgba(18, 192, 148, 0.9);
+    box-shadow: 0 0 15px rgba(18, 192, 148, 0.4);
+    transform: translateY(-2px);
+}
+
+/* steps layout */
+.steps-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+    align-items: flex-start; 
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.step h2 {
+    color: #8c71e6; 
+    font-size: 1.6rem;
+    font-weight: 400;
+    letter-spacing: 2px;
+}
+
+.step p {
+    color: #e0e0e0; 
+    font-size: 1rem;
+    line-height: 1.6;
+}
