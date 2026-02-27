@@ -1,0 +1,220 @@
+/* Override global flex centering for this page */
+
+
+body.simulation-page {
+    display: block; 
+    padding: 3rem;
+    overflow-y: auto;
+}
+
+.sim-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.sim-title {
+    font-size: 2.5rem;
+    font-weight: normal;
+    color: #9d7cfa;
+    letter-spacing: 2px;
+}
+
+.sim-logo {
+    height: 3em;
+}
+
+.sim-content {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+    gap: 2.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    align-items: flex-start;
+}
+
+.sim-col {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    gap: 0; /* buttons use their own margin */
+}
+
+.glass-panel {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 2rem;
+    min-width: 0;
+    color: white;
+}
+
+
+/* Button Variants */
+.btn-main {
+    width: 100%;
+    padding: 1rem;
+    border-radius: 25px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 1.5rem 0;
+}
+
+.gold {
+    background: linear-gradient(90deg, #B59449 0%, #7A612A 100%);
+    color: #FFE5A3;
+}
+
+.red-dim {
+    background: rgba(122, 59, 59, 0.3);
+    color: #E0506E;
+}
+
+/* --- Process Grid (CSS Grid, no table) --- */
+
+.process-grid {
+    display: grid;
+    grid-template-columns: 70px repeat(3, 100px);
+    gap: 10px 14px;
+    margin: 1.5rem auto;
+    width: fit-content;
+}
+
+/* Process rows wrapper — spans all 4 columns, inherits parent column tracks */
+#process-rows {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    gap: 10px 14px;
+}
+
+/* Header label cells */
+.pg-header {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: normal;
+    text-align: center;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 6px;
+    height: 28px;
+    overflow: visible;
+}
+
+/* All data cells center their child */
+.pg-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 65px;
+
+}
+
+/* The square boxes — badges and inputs */
+.cell-box {
+    width: 60px;
+    height: 60px;
+    border-radius: 14px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    font-family: inherit;
+    font-size: 0.95rem;
+    border: none;
+    padding: 0;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+/* Badge colors */
+.badge.cell-box { font-weight: bold; color: white; }
+.p1 { background-color: #7C69FF; }
+.p2 { background-color: #E0506E; }
+.p3 { background-color: #69A297; }
+
+/* Input styling */
+input.cell-box {
+    background: #2a2a2a;
+    color: white;
+    outline: none;
+    cursor: text;
+    -moz-appearance: textfield;
+    width: 80px;
+    height: 60px;
+    border-radius: 14px;
+}
+
+input.cell-box:focus {
+    background: #383838;
+    box-shadow: 0 0 0 2px rgba(124, 105, 255, 0.4);
+}
+
+input.cell-box::-webkit-outer-spin-button,
+input.cell-box::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* --- Utility Buttons --- */
+.sim-utilities {
+    display: flex;
+    gap: 1rem;
+}
+
+.btn-sub {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border-radius: 25px;
+    border: none;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.75);
+    font-family: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-sub:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* --- Algorithm Dropdown --- */
+.algo-dropdown {
+    width: 100%;
+    padding: 0.85rem 1.2rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.06);
+    color: white;
+    font-family: inherit;
+    font-size: 1rem;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    margin: 1rem 0;
+}
+
+.algo-dropdown option {
+    background: #1a1a2e;
+    color: white;
+}
+
+/* --- Algo Details --- */
+.algo-details {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.7;
+}
+
+.algo-details p {
+    margin-bottom: 0.5rem;
+    color: rgba(255,255,255,0.85);
+}
