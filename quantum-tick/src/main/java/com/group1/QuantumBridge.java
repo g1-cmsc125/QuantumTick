@@ -1,31 +1,54 @@
 package com.group1;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.time.LocalTime;
 import java.util.Random;
 
 import javafx.scene.web.WebEngine;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
 
 public class QuantumBridge {
     private WebEngine engine;
+    private Stage stage;
 
-    // Constructor gets the engine from App.java
-    public QuantumBridge(WebEngine engine) {
+    public QuantumBridge(WebEngine engine, Stage stage) {
         this.engine = engine;
+        this.stage  = stage;
     }
 
-    // This must match the name used in the HTML onclick="javaApp.runTest()"
     public void runTest() {
         System.out.println("Button clicked! Java is processing...");
-
-        // 1. Do some "Java work"
         String currentTime = LocalTime.now().toString();
         int randomId = new Random().nextInt(9999);
-        
-        // 2. Format the message
         String finalMessage = "Java Connection Success! Time: " + currentTime + " | ID: " + randomId;
-
-        // 3. Push it to the HTML!
-        // We are telling the browser to run: changeText('Java Connection Success! ...');
         engine.executeScript("changeText('" + finalMessage + "');");
+    }
+
+    public void openFilePicker() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle("Upload Process CSV");
+        chooser.getExtensionFilters().add(
+            new FileChooser.ExtensionFilter("CSV Files", "*.csv")
+        );
+
+        File file = chooser.showOpenDialog(stage);
+        if (file == null) return;
+
+        try {
+            String content = Files.readString(file.toPath());
+
+            String escaped = content
+                .replace("\\", "\\\\")
+                .replace("`", "\\`")
+                .replace("$", "\\$");
+
+            engine.executeScript("parseCSV(`" + escaped + "`)");
+
+        } catch (IOException e) {
+            engine.executeScript("alert('Failed to read file: " + e.getMessage() + "')");
+        }
     }
 }

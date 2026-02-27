@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // start.js constants
     const addPBtn = document.getElementById('add-process-btn');
     const procRows = document.getElementById('process-rows');
 
@@ -17,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return BADGE_COLORS[Math.floor(Math.random() * BADGE_COLORS.length)];
     }
 
+    // --- Row Factory ---
     // Mirrors the pg-cell structure exactly, color always randomized
     function createRow(index) {
         const color = getRandomColor();
@@ -29,17 +29,18 @@ document.addEventListener('DOMContentLoaded', () => {
         ].join('');
     }
 
-    // Populate with n fresh randomized rows
+    // --- Populate with n fresh randomized rows ---
     function populateRows(count = MIN_ROWS) {
         let html = '';
         for (let i = 0; i < count; i++) html += createRow(i);
         procRows.innerHTML = html;
     }
 
-    addPBtn.addEventListener('click', addProcess);
-    document.getElementById('rnd-btn').addEventListener('click', randomize);
-    document.getElementById('upl-btn').addEventListener('click', upload);
-    document.getElementById('clr-btn').addEventListener('click', clear);
+    // --- Button listeners ---
+    addPBtn.onclick = addProcess;
+    document.getElementById('rnd-btn').onclick = randomize;
+    document.getElementById('upl-btn').onclick = upload;
+    document.getElementById('clr-btn').onclick = clear;
 
     // --- Functionalities ---
     function addProcess() {
@@ -52,8 +53,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function clear() {
-        // Rebuilds MIN_ROWS with fresh random colors each time
-        populateRows(MIN_ROWS);
+        // Fade the whole container out as one unit — avoids per-cell
+        // reflow flicker that JavaFX WebView causes with staggered transitions
+        procRows.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+        procRows.style.opacity    = '0';
+        procRows.style.transform  = 'scale(0.97)';
+
+        setTimeout(() => {
+            populateRows(MIN_ROWS);
+
+            // Fade back in after rebuild
+            procRows.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+            procRows.style.opacity    = '0';
+            procRows.style.transform  = 'scale(0.97)';
+
+            // Force a reflow so the starting state registers before animating in
+            void procRows.offsetHeight;
+
+            procRows.style.opacity   = '1';
+            procRows.style.transform = 'scale(1)';
+        }, 260);
     }
 
     function randomize() {
@@ -90,12 +109,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // To do: csv parsing **considering correct format etc.**
     function upload() {
+        try {
+            if (typeof javaApp !== 'undefined' && javaApp !== null) {
+                javaApp.openFilePicker();
+                return;
+            }
+        } catch (e) {
+            console.warn('javaApp bridge not available, falling back to browser upload:', e);
+        }
+
+        // Browser fallback — fresh input created every click so change
+        // always fires, even if the same file is selected again
         const input = document.createElement('input');
-        input.type = 'file';
+        input.type  = 'file';
         input.accept = '.csv';
-        input.click();
+        input.value = '';  // reset so same-file re-selection still fires
 
         input.addEventListener('change', (e) => {
             const file = e.target.files[0];
@@ -111,8 +140,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- CSV Parser ---
-    function parseCSV(text) {
+    // --- CSV Parser (on window so Java can call: engine.executeScript("parseCSV(...)")) ---
+    window.parseCSV = function parseCSV(text) {
         const EXPECTED_HEADERS = ['burst', 'arrival', 'prio'];
 
         const lines = text
@@ -186,8 +215,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert(`Invalid CSV: line ${lineNum} arrival time must be between 0–30, got ${arrival}.`);
                 return;
             }
-            if (prio < 1 || prio > dataLines.length) {
-                alert(`Invalid CSV: line ${lineNum} priority must be between 1–${dataLines.length}, got ${prio}.`);
+            if (prio < 1 || prio > MAX_ROWS) {
+                alert(`Invalid CSV: line ${lineNum} priority must be between 1–${MAX_ROWS}, got ${prio}.`);
                 return;
             }
 
@@ -203,29 +232,42 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // --- All valid: wipe and repopulate rows ---
-        procRows.innerHTML = '';
-        parsed.forEach(({ burst, arrival, prio }, i) => {
-            const color = getRandomColor();
-            const label = `P${i + 1}`;
-            const html = [
-                `<div class="pg-cell"><span class="badge cell-box" style="background-color:${color}">${label}</span></div>`,
-                `<div class="pg-cell"><input class="cell-box" type="number" value="${burst}" data-value="${burst}"></div>`,
-                `<div class="pg-cell"><input class="cell-box" type="number" value="${arrival}" data-value="${arrival}"></div>`,
-                `<div class="pg-cell"><input class="cell-box" type="number" value="${prio}" data-value="${prio}"></div>`,
-            ].join('');
-            procRows.insertAdjacentHTML('beforeend', html);
-        });
+        // --- All valid: fade out, wipe, repopulate, fade in ---
+        procRows.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+        procRows.style.opacity    = '0';
+        procRows.style.transform  = 'scale(0.97)';
+
+        setTimeout(() => {
+            procRows.innerHTML = '';
+
+            parsed.forEach(({ burst, arrival, prio }, i) => {
+                const color = getRandomColor();
+                const label = `P${i + 1}`;
+                const html = [
+                    `<div class="pg-cell"><span class="badge cell-box" style="background-color:${color}">${label}</span></div>`,
+                    `<div class="pg-cell"><input class="cell-box" type="number" value="${burst}"   data-value="${burst}"></div>`,
+                    `<div class="pg-cell"><input class="cell-box" type="number" value="${arrival}" data-value="${arrival}"></div>`,
+                    `<div class="pg-cell"><input class="cell-box" type="number" value="${prio}"    data-value="${prio}"></div>`,
+                ].join('');
+                procRows.insertAdjacentHTML('beforeend', html);
+            });
+
+            // Reset to invisible then trigger fade-in
+            procRows.style.opacity   = '0';
+            procRows.style.transform = 'scale(0.97)';
+            void procRows.offsetHeight; // force reflow so transition fires
+            procRows.style.opacity   = '1';
+            procRows.style.transform = 'scale(1)';
+        }, 260);
     }
 
-
-    // Input value tracking
-    procRows.addEventListener('change', (e) => {
+    // --- Input value tracking ---
+    procRows.onchange = (e) => {
         if (e.target.matches('input.cell-box')) {
             e.target.dataset.value = e.target.value;
         }
-    });
+    };
 
-    // Init: build the default 3 rows with random colors on first load 
+    // --- Init: build the default 3 rows with random colors on first load ---
     populateRows();
 });
