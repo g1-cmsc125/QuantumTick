@@ -3,9 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Start</title>
+    <link rel="stylesheet" href="../styles/style.css">
+    <link rel="stylesheet" href="../styles/index.css">
+    <title>QuantumTick - Simulation</title>
 </head>
-<body>
-    Start
+<body class="simulation-page">
+    <header class="sim-header">
+        <div class="logo-container-small">
+            <img src="../images/qt-logo.png" alt="logo">
+        </div>
+        <h1 class="header-title">QuantumTick</h1>
+    </header>
+
+    <div class="simulation-container">
+        <section class="glass-card left-panel">
+            <h2>Processes</h2>
+            <p class="subtitle">Add a process to the simulation</p>
+            
+            <div class="process-table">
+                <div class="table-header">
+                    <span>Burst time</span>
+                    <span>Arrival time</span>
+                    <span>Priority No.</span>
+                </div>
+                <div class="process-row">
+                    <span class="p-badge p1">P1</span>
+                    <input type="number" value="0">
+                    <input type="number" value="0">
+                    <input type="number" value="0">
+                </div>
+                </div>
+
+            <button class="btn-action btn-gold">Add process</button>
+            <div class="utility-btns">
+                <button class="btn-util">Randomize</button>
+                <button class="btn-util">Upload</button>
+                <button class="btn-util">Clear</button>
+            </div>
+        </section>
+
+        <section class="glass-card right-panel">
+            <h2>CPU Algorithm</h2>
+            <p class="subtitle">Select a scheduling algorithm</p>
+            
+            <div class="dropdown-container">
+                <select id="algorithm-select">
+                    <option>Round Robin</option>
+                    <option>First Come First Served</option>
+                </select>
+            </div>
+
+            <div class="algorithm-description">
+                <p>Bullet description of algorithm</p>
+                <ul>
+                    <li>Lorem ipsum dolor sit amet...</li>
+                    <li>Supports time quantum mechanics...</li>
+                </ul>
+            </div>
+
+            <button class="btn-action btn-red">Quantum time</button>
+        </section>
+    </div>
 </body>
 </html>

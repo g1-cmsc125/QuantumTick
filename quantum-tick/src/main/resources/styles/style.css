@@ -1,0 +1,39 @@
+/* font */
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: radial-gradient(circle at top, #2f104d 0%, #05020a 60%, #000000 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center; /* Original center alignment */
+    align-items: center;    /* Original center alignment */
+    font-family: 'Space Mono', 'Courier New', monospace;
+    overflow: hidden;
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2.5rem;
+}
+
+.logo-container {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.logo-container img {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+}
