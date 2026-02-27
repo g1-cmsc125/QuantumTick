@@ -10,7 +10,7 @@ public class App extends Application {
 
     @Override
     public void start(Stage stage) {
-        QuantumFrame mainFrame = new QuantumFrame();
+        QuantumFrame mainFrame = new QuantumFrame(stage); // <-- pass stage
 
         Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
         Scene scene = new Scene(mainFrame, screenBounds.getWidth(), screenBounds.getHeight() - 30);
