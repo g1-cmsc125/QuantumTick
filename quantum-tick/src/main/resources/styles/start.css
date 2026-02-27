@@ -83,6 +83,14 @@ body.simulation-page {
     width: fit-content;
 }
 
+/* Process rows wrapper — spans all 4 columns, inherits parent column tracks */
+#process-rows {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    gap: 10px 14px;
+}
+
 /* Header label cells */
 .pg-header {
     font-size: 0.75rem;

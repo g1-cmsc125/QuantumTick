@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../styles/style.css">
     <link rel="stylesheet" href="../styles/start.css">
+    <script src="../scripts/start.js"></script>
     <title>QuantumTick - Simulation</title>
 </head>
 <body class="simulation-page">
@@ -26,29 +27,33 @@
                     <div class="pg-cell pg-header">Burst time</div>
                     <div class="pg-cell pg-header">Arrival time</div>
                     <div class="pg-cell pg-header">Priority No.</div>
-                    <!-- P1 -->
-                    <div class="pg-cell"><span class="badge cell-box p1">P1</span></div>
-                    <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
-                    <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
-                    <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
-                    <!-- P2 -->
-                    <div class="pg-cell"><span class="badge cell-box p2">P2</span></div>
-                    <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
-                    <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
-                    <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
-                    <!-- P3 -->
-                    <div class="pg-cell"><span class="badge cell-box p3">P3</span></div>
-                    <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
-                    <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
-                    <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+
+                    <!-- Process rows container — spans all 4 columns, uses subgrid -->
+                    <div id="process-rows">
+                        <!-- P1 -->
+                        <div class="pg-cell"><span class="badge cell-box p1">P1</span></div>
+                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                        <!-- P2 -->
+                        <div class="pg-cell"><span class="badge cell-box p2">P2</span></div>
+                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                        <!-- P3 -->
+                        <div class="pg-cell"><span class="badge cell-box p3">P3</span></div>
+                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                    </div>
                 </div>
             </section>
 
             <button class="btn-main gold" id="add-process-btn">Add process</button>
             <div class="sim-utilities">
-                <button class="btn-sub">Randomize</button>
-                <button class="btn-sub">Upload</button>
-                <button class="btn-sub">Clear</button>
+                <button id="rnd-btn" class="btn-sub">Randomize</button>
+                <button id="upl-btn" class="btn-sub">Upload</button>
+                <button id="clr-btn" class="btn-sub">Clear</button>
             </div>
         </div>
 
