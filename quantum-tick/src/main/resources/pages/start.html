@@ -4,65 +4,75 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="../styles/style.css">
-    <link rel="stylesheet" href="../styles/index.css">
+    <link rel="stylesheet" href="../styles/start.css">
     <title>QuantumTick - Simulation</title>
 </head>
 <body class="simulation-page">
     <header class="sim-header">
-        <div class="logo-container-small">
-            <img src="../images/qt-logo.png" alt="logo">
-        </div>
-        <h1 class="header-title">QuantumTick</h1>
+        <img src="../images/qt-logo.png" alt="QT Logo" class="sim-logo">
+        <h1 class="sim-title">QuantumTick</h1>
     </header>
 
-    <div class="simulation-container">
-        <section class="glass-card left-panel">
-            <h2>Processes</h2>
-            <p class="subtitle">Add a process to the simulation</p>
-            
-            <div class="process-table">
-                <div class="table-header">
-                    <span>Burst time</span>
-                    <span>Arrival time</span>
-                    <span>Priority No.</span>
+    <main class="sim-content">
+        <!-- Left column: panel + buttons below -->
+        <div class="sim-col">
+            <section class="glass-panel">
+                <h3>Processes</h3>
+                <p class="subtitle">Add a process to the simulation</p>
+                
+                <div class="process-grid" id="process-table-body">
+                    <!-- Header row -->
+                    <div class="pg-cell pg-header"></div>
+                    <div class="pg-cell pg-header">Burst time</div>
+                    <div class="pg-cell pg-header">Arrival time</div>
+                    <div class="pg-cell pg-header">Priority No.</div>
+                    <!-- P1 -->
+                    <div class="pg-cell"><span class="badge cell-box p1">P1</span></div>
+                    <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                    <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                    <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                    <!-- P2 -->
+                    <div class="pg-cell"><span class="badge cell-box p2">P2</span></div>
+                    <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                    <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                    <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                    <!-- P3 -->
+                    <div class="pg-cell"><span class="badge cell-box p3">P3</span></div>
+                    <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                    <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                    <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
                 </div>
-                <div class="process-row">
-                    <span class="p-badge p1">P1</span>
-                    <input type="number" value="0">
-                    <input type="number" value="0">
-                    <input type="number" value="0">
-                </div>
-                </div>
+            </section>
 
-            <button class="btn-action btn-gold">Add process</button>
-            <div class="utility-btns">
-                <button class="btn-util">Randomize</button>
-                <button class="btn-util">Upload</button>
-                <button class="btn-util">Clear</button>
+            <button class="btn-main gold" id="add-process-btn">Add process</button>
+            <div class="sim-utilities">
+                <button class="btn-sub">Randomize</button>
+                <button class="btn-sub">Upload</button>
+                <button class="btn-sub">Clear</button>
             </div>
-        </section>
+        </div>
 
-        <section class="glass-card right-panel">
-            <h2>CPU Algorithm</h2>
-            <p class="subtitle">Select a scheduling algorithm</p>
-            
-            <div class="dropdown-container">
-                <select id="algorithm-select">
+        <!-- Right column: algorithm panel + quantum button below -->
+        <div class="sim-col">
+            <section class="glass-panel">
+                <h3>CPU Algorithm</h3>
+                <p>Select a scheduling algorithm</p>
+                
+                <select class="algo-dropdown">
                     <option>Round Robin</option>
-                    <option>First Come First Served</option>
                 </select>
-            </div>
 
-            <div class="algorithm-description">
-                <p>Bullet description of algorithm</p>
-                <ul>
-                    <li>Lorem ipsum dolor sit amet...</li>
-                    <li>Supports time quantum mechanics...</li>
-                </ul>
-            </div>
+                <div class="algo-details">
+                    <p>Bullet description of algorithm</p>
+                    <ul>
+                        <li>Lorem ipsum Lorem ipsum...</li>
+                        <li>Lorem ipsum Lorem ipsum...</li>
+                    </ul>
+                </div>
+            </section>
 
-            <button class="btn-action btn-red">Quantum time</button>
-        </section>
-    </div>
+            <button class="btn-main red-dim">Quantum time</button>
+        </div>
+    </main>
 </body>
 </html>
