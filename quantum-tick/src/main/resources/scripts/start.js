@@ -271,3 +271,5 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Init: build the default 3 rows with random colors on first load ---
     populateRows();
 });
+
+
