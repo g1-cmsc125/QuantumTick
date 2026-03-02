@@ -480,4 +480,36 @@ function calculateFCFS(processes) {
             return a.priority - b.priority || a.arrival - b.arrival; // Lower number wins
         }
     }
+
+    // ==========================================
+    // RESULTS BUTTON FUNCTION
+    // ==========================================
+
+    const menuBtn = document.getElementById('menu-btn');
+    const restartBtn = document.getElementById('restart-sim-btn');
+
+    if (menuBtn) {
+        menuBtn.addEventListener('click', () => {
+            if (typeof javaApp !== 'undefined' && javaApp !== null) {
+                javaApp.navigate('/index.html');
+            } else {
+                window.location.href = '../index.html'; 
+            }
+        });
+    }
+
+    if (restartBtn) {
+        restartBtn.addEventListener('click', () => {
+            const resultsPanel = document.getElementById('results-panel');
+            resultsPanel.style.display = 'none';
+
+            const clearBtn = document.getElementById('clr-btn');
+            if (clearBtn) {
+                clearBtn.click();
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+
 });

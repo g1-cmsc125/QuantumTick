@@ -83,7 +83,7 @@
 
                 <div id="priority-rule-container" class="conditional-input" style="display: none; margin-top: 15px;">
                     <label for="priority-rule">Priority Rule:</label>
-                    <select id="priority-rule" class="cell-box">
+                    <select id="priority-rule" class="cell-box prio-dropdown">
                         <option value="high-num-high-prio">Higher Number = High Priority</option>
                         <option value="low-num-high-prio">Lower Number = High Priority</option>
                     </select>
@@ -123,9 +123,13 @@
                 <p><strong>Average Turnaround Time:</strong> <span id="avg-tat">0.00</span> ms</p>
                 <p><strong>Average Waiting Time:</strong> <span id="avg-wt">0.00</span> ms</p>
             </div>
-        </section>
 
-           
+            <div class="results-actions">
+                <button class="btn-main gold" id="restart-sim-btn">Restart Simulation</button>
+                <button class="btn-main" id="menu-btn">Main Menu</button>
+            </div>
+
+        </section>           
         </div>
     </main>
 </body>
