@@ -51,4 +51,14 @@ public class QuantumBridge {
             engine.executeScript("alert('Failed to read file: " + e.getMessage() + "')");
         }
     }
+
+    public void loadPage(String path){
+        try {
+            String url = getClass().getResource(path).toExternalForm();
+            engine.load(url);
+        } catch (Exception e) {
+            System.err.println("Failed to load page: " + path);
+            e.printStackTrace();
+        }
+    }
 }
