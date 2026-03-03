@@ -16,7 +16,7 @@ public class QuantumBridge {
 
     public QuantumBridge(WebEngine engine, Stage stage) {
         this.engine = engine;
-        this.stage  = stage;
+        this.stage = stage;
     }
 
     public void runTest() {
@@ -31,19 +31,19 @@ public class QuantumBridge {
         FileChooser chooser = new FileChooser();
         chooser.setTitle("Upload Process CSV");
         chooser.getExtensionFilters().add(
-            new FileChooser.ExtensionFilter("CSV Files", "*.csv")
-        );
+                new FileChooser.ExtensionFilter("CSV Files", "*.csv"));
 
         File file = chooser.showOpenDialog(stage);
-        if (file == null) return;
+        if (file == null)
+            return;
 
         try {
             String content = Files.readString(file.toPath());
 
             String escaped = content
-                .replace("\\", "\\\\")
-                .replace("`", "\\`")
-                .replace("$", "\\$");
+                    .replace("\\", "\\\\")
+                    .replace("`", "\\`")
+                    .replace("$", "\\$");
 
             engine.executeScript("parseCSV(`" + escaped + "`)");
 
@@ -52,13 +52,8 @@ public class QuantumBridge {
         }
     }
 
-    public void loadPage(String path){
-        try {
-            String url = getClass().getResource(path).toExternalForm();
-            engine.load(url);
-        } catch (Exception e) {
-            System.err.println("Failed to load page: " + path);
-            e.printStackTrace();
-        }
+    // Add this method to handle page navigation
+    public void navigate(String path) {
+        engine.load(getClass().getResource(path).toExternalForm());
     }
 }
