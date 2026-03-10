@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="../styles/style.css">
     <link rel="stylesheet" href="../styles/start.css">
     <link rel="stylesheet" href="../styles/resultsStyle.css">
+    <link rel="stylesheet" href="../styles/gantt-animation.css">
     <script src="../scripts/start.js"></script>
     <script src="../scripts/logic.js"></script>
 
@@ -24,32 +25,39 @@
             <section class="glass-panel">
                 <h3>Processes</h3>
                 <p class="subtitle">Add a process to the simulation</p>
-                
-                <div class="process-grid" id="process-table-body">
-                    <!-- Header row -->
-                    <div class="pg-cell pg-header"></div>
-                    <div class="pg-cell pg-header">Burst time</div>
-                    <div class="pg-cell pg-header">Arrival time</div>
-                    <div class="pg-cell pg-header">Priority No.</div>
 
-                    <!-- Process rows container — spans all 4 columns, uses subgrid -->
-                    <div id="process-rows">
-                        <!-- P1 -->
-                        <div class="pg-cell"><span class="badge cell-box p1">P1</span></div>
-                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
-                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
-                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
-                        <!-- P2 -->
-                        <div class="pg-cell"><span class="badge cell-box p2">P2</span></div>
-                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
-                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
-                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
-                        <!-- P3 -->
-                        <div class="pg-cell"><span class="badge cell-box p3">P3</span></div>
-                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
-                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
-                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                <!-- Input table: header always visible, rows scroll below -->
+                <div class="process-table-wrap">
+
+                    <!-- Sticky header row -->
+                    <div class="process-grid-header">
+                        <div class="pg-header"></div>
+                        <div class="pg-header">Burst time</div>
+                        <div class="pg-header">Arrival time</div>
+                        <div class="pg-header">Priority No.</div>
                     </div>
+
+                    <!-- Scrollable data rows -->
+                    <div class="process-rows-scroll" id="process-table-body">
+                        <div id="process-rows">
+                            <!-- P1 -->
+                            <div class="pg-cell"><span class="badge cell-box p1">P1</span></div>
+                            <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                            <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                            <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                            <!-- P2 -->
+                            <div class="pg-cell"><span class="badge cell-box p2">P2</span></div>
+                            <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                            <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                            <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                            <!-- P3 -->
+                            <div class="pg-cell"><span class="badge cell-box p3">P3</span></div>
+                            <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                            <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                            <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                        </div>
+                    </div>
+
                 </div>
             </section>
 
@@ -94,44 +102,65 @@
             <div id="error-msg" style="color: #ff4d4d; margin-top: 10px; font-weight: bold; min-height: 1.2em; text-align: center;"></div>
 
         </div>
-    </main> 
-        <section class="results-section glass-panel" style="display: none;" id="results-panel">
-            <h3>Simulation Results</h3>
-            <div class="gantt-container" id="gantt-container" style="display: none; margin-bottom: 20px;">
-            <h4 style="margin-bottom: 10px;">Gantt Chart</h4>
-            <div class="gantt-chart" id="gantt-chart">
-                </div>
-            <div class="gantt-labels" id="gantt-labels">
-                </div>
+    </main>
+
+    <!-- Results panel: rendered below sim columns after simulation runs -->
+    <div id="results-panel" style="display: none;">
+
+        <!-- Section title -->
+        <div class="results-section-title">
+            <h2>Results</h2>
+            <div class="results-title-line"></div>
         </div>
 
-            <table class="results-table">
-                <thead>
-                    <tr>
-                        <th>Process</th>
-                        <th>Arrival Time</th>
-                        <th>Burst Time</th>
-                        <th>Completion Time</th>
-                        <th>Turnaround Time (TAT)</th>
-                        <th>Waiting Time (WT)</th>
-                    </tr>
-                </thead>
-                <tbody id="results-body">
-                    </tbody>
-            </table>
-            
-            <div class="averages">
-                <p><strong>Average Turnaround Time:</strong> <span id="avg-tat">0.00</span> ms</p>
-                <p><strong>Average Waiting Time:</strong> <span id="avg-wt">0.00</span> ms</p>
+        <!-- ── Card 1: Gantt Chart ── -->
+        <section class="result-card" id="gantt-card">
+            <div class="result-card-header">
+                <h3>Gantt Chart</h3>
+            </div>
+            <div id="gantt-container" style="display: none;">
+                <div class="gantt-chart" id="gantt-chart"></div>
+                <div class="gantt-labels" id="gantt-labels"></div>
+            </div>
+        </section>
+
+        <!-- ── Card 2: Process Results Table ── -->
+        <section class="result-card" id="table-card">
+            <div class="result-card-header">
+                <h3>Process Results</h3>
+            </div>
+
+            <div class="results-table-wrap">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Process ID</th>
+                            <th>Burst Time</th>
+                            <th>Arrival Time</th>
+                            <th>Priority Number</th>
+                            <th>Waiting Time</th>
+                            <th>Turnaround Time</th>
+                            <th>Average Waiting Time</th>
+                            <th>Average Turnaround Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-body"></tbody>
+                    <tfoot>
+                        <tr class="averages-row">
+                            <td colspan="6" class="avg-label">Averages</td>
+                            <td id="avg-wt" class="avg-val">—</td>
+                            <td id="avg-tat" class="avg-val">—</td>
+                        </tr>
+                    </tfoot>
+                </table>
             </div>
 
             <div class="results-actions">
                 <button class="btn-main gold" id="restart-sim-btn">Restart Simulation</button>
                 <button class="btn-main" id="menu-btn">Main Menu</button>
             </div>
+        </section>
 
-        </section>           
-        </div>
-    </main>
+    </div>
 </body>
 </html>

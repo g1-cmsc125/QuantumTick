@@ -17,7 +17,7 @@
             </div>
             <h1 class="header-title">How QuantumTick Works</h1>
         </div>
-        <button class="btns" id="btn-back" onclick="window.location.href='../index.html'">Back</button>
+        <button class="btns" id="btn-back" onclick="if(typeof javaApp !== 'undefined' && javaApp !== null) { javaApp.navigate('home'); } else { window.location.href='../index.html'; }">Back</button>
     </header>
 
     <main class="steps-container">

@@ -1,31 +1,164 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-const algoSelect = document.getElementById('algo-select');
-const quantumContainer = document.getElementById('quantum-container');
+const algoSelect        = document.getElementById('algo-select');
+const quantumContainer  = document.getElementById('quantum-container');
 const priorityContainer = document.getElementById('priority-rule-container');
-const runSimBtn = document.getElementById('run-sim-btn');
-const resultsPanel = document.getElementById('results-panel');
-const resultsBody = document.getElementById('results-body');
+const runSimBtn         = document.getElementById('run-sim-btn');
+const resultsPanel      = document.getElementById('results-panel');
+const resultsBody       = document.getElementById('results-body');
 
+// ─── Playback state ────────────────────────────────────────────────────────
+let animHandle    = null;
+let animTick      = 0;      // current time unit (0 … total)
+let animTotal     = 0;      // total time units
+let animTimeline  = [];     // [{id, start, end, color}]
+let animProcesses = [];
+let animPaused    = false;
+let animDone      = false;
+let speedIdx      = 1;
+let pendingTable  = null;
 
+// pixels-per-time-unit — chart will be this wide per unit
+const PX_PER_UNIT = 36; // each time unit = 36px wide
+
+const SPEEDS = [
+    { label: '0.5×', ms: 700 },
+    { label: '1×',   ms: 400 },
+    { label: '2×',   ms: 200 },
+    { label: '4×',   ms:  90 },
+    { label: '8×',   ms:  30 },
+];
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
 function getProcessData() {
-        const rows = [...document.querySelectorAll('#process-rows .pg-cell')];
-        const processes = [];
-        
-        for (let i = 0; i < rows.length; i += 4) {
-            const badge = rows[i].querySelector('.badge');
-            
-            processes.push({
-                id: badge.innerText.trim(),
-                color: badge.style.backgroundColor, // <-- NEW: Save the exact color
-                burst: parseInt(rows[i+1].querySelector('input').value, 10),
-                arrival: parseInt(rows[i+2].querySelector('input').value, 10),
-                priority: parseInt(rows[i+3].querySelector('input').value, 10)
-            });
-        }
-        return processes;
+    const rows = [...document.querySelectorAll('#process-rows .pg-cell')];
+    const out  = [];
+    for (let i = 0; i < rows.length; i += 4) {
+        const badge = rows[i].querySelector('.badge');
+        out.push({
+            id:       badge.innerText.trim(),
+            color:    badge.style.backgroundColor,
+            burst:    parseInt(rows[i+1].querySelector('input').value, 10),
+            arrival:  parseInt(rows[i+2].querySelector('input').value, 10),
+            priority: parseInt(rows[i+3].querySelector('input').value, 10),
+        });
+    }
+    return out;
+}
+
+algoSelect.addEventListener('change', e => {
+    quantumContainer.style.display  = e.target.value === 'rr'           ? 'block' : 'none';
+    priorityContainer.style.display = e.target.value.startsWith('prio') ? 'block' : 'none';
+});
+
+// ─── Run simulation ────────────────────────────────────────────────────────
+runSimBtn.addEventListener('click', () => {
+    const procs = getProcessData();
+    const algo  = algoSelect.value;
+
+    if (!procs.length) { alert('Please add at least one process.'); return; }
+    if (procs.some(p => isNaN(p.burst) || isNaN(p.arrival) || isNaN(p.priority) || p.burst <= 0)) {
+        alert('All processes must have valid numbers and Burst Time >= 1.');
+        return;
     }
 
+    let res;
+    switch (algo) {
+        case 'fcfs':    res = calculateFCFS(procs); break;
+        case 'rr': {
+            let q = parseInt(document.getElementById('quantum-time').value, 10);
+            if (isNaN(q) || q < 1) q = 1;
+            res = calculateRR(procs, q); break;
+        }
+        case 'sjf-np':  res = calculateSJF_NP(procs); break;
+        case 'sjf-p':   res = calculateSJF_P(procs);  break;
+        case 'prio-np': res = calculatePriority_NP(procs, document.getElementById('priority-rule').value); break;
+        case 'prio-p':  res = calculatePriority_P(procs,  document.getElementById('priority-rule').value); break;
+        default: alert('Algorithm not implemented.'); return;
+    }
+
+    pendingTable = res.completed.sort((a,b) => parseInt(a.id.slice(1)) - parseInt(b.id.slice(1)));
+
+    resultsPanel.style.display = 'block';
+    resultsBody.innerHTML      = '';
+    document.getElementById('avg-tat').innerText = '—';
+    document.getElementById('avg-wt').innerText  = '—';
+    resultsPanel.scrollIntoView({ behavior: 'smooth' });
+
+    startAnimation(res.timeline, procs);
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+//  ANIMATION ENGINE
+//  Strategy: fixed-width chart (total * PX_PER_UNIT px wide).
+//  Each tick, we advance by 1 time unit.
+//  • Completed blocks: rendered at their exact pixel width, stay put.
+//  • Current (active) block: grows one PX_PER_UNIT slice per tick.
+//  • Future blocks: not rendered yet — only empty space ahead.
+//  Time axis is pre-drawn with all numbers so it's a real ruler.
+// ══════════════════════════════════════════════════════════════════════════
+function startAnimation(timeline, procs) {
+    if (animHandle) { clearInterval(animHandle); animHandle = null; }
+
+    animTimeline  = timeline;
+    animProcesses = procs;
+    animTick      = 0;
+    animPaused    = false;
+    animDone      = false;
+    speedIdx      = 1;
+
+    const total   = timeline[timeline.length - 1]?.end ?? 0;
+    animTotal     = total;
+    const chartPx = total * PX_PER_UNIT;
+
+    // ── Wipe & prepare DOM ─────────────────────────────────────────────
+    const wrapper  = document.getElementById('gantt-container');
+    const chartEl  = document.getElementById('gantt-chart');
+    const labelRow = document.getElementById('gantt-labels');
+
+    wrapper.style.display   = 'block';
+    labelRow.style.display  = 'none'; // we build our own axis
+
+    ['gantt-controls','gantt-progress-wrap','gantt-timeline-row','gantt-scroll-wrap'].forEach(id => {
+        document.getElementById(id)?.remove();
+    });
+    chartEl.innerHTML = '';
+
+    // ── Scrollable wrapper around chart + axis ─────────────────────────
+    // We detach chartEl from the DOM momentarily, wrap it, re-attach
+    const scrollWrap = document.createElement('div');
+    scrollWrap.id = 'gantt-scroll-wrap';
+
+    // ── Chart area (fixed pixel width) ────────────────────────────────
+    chartEl.style.width    = `${chartPx}px`;
+    chartEl.style.minWidth = `${chartPx}px`;
+    chartEl.style.position = 'relative';
+    chartEl.style.display  = 'flex';
+    chartEl.style.height   = '52px';
+
+    // ── Time axis (same fixed pixel width, pre-drawn) ──────────────────
+    const axis = document.createElement('div');
+    axis.id            = 'gantt-timeline-row';
+    axis.style.width   = `${chartPx}px`;
+    axis.style.minWidth= `${chartPx}px`;
+    axis.style.position= 'relative';
+    axis.style.height  = '28px';
+
+    const step = total > 40 ? 5 : total > 20 ? 2 : 1;
+    for (let t = 0; t <= total; t++) {
+        const pip = document.createElement('div');
+        pip.classList.add('gantt-time-pip');
+        pip.dataset.t  = t;
+        pip.style.left = `${t * PX_PER_UNIT}px`;  // absolute px, not %
+
+        const num = document.createElement('span');
+        num.classList.add('gantt-time-num');
+        num.innerText = t;
+        if (t % step !== 0 && t !== total) num.classList.add('minor');
+
+        pip.appendChild(num);
+        axis.appendChild(pip);
+    }
 algoSelect.addEventListener('change', (e) => {
         const selected = e.target.value;
         
@@ -128,407 +261,384 @@ runSimBtn.addEventListener('click', () => {
     renderGanttChart(results.timeline, processes); 
 });
 
-    
+    // Re-insert into scroll wrapper
+    scrollWrap.appendChild(chartEl);
+    scrollWrap.appendChild(axis);
 
-function calculateFCFS(processes) {
-        let sorted = [...processes].sort((a, b) => a.arrival - b.arrival);
-        
-        let currentTime = 0;
-        let completedProcesses = [];
-        let timeline = []; // <-- NEW: Array to track execution blocks
+    // Find where gantt-container's children are and insert scrollWrap before labelRow
+    wrapper.insertBefore(scrollWrap, labelRow);
 
-        sorted.forEach(p => {
-            // Track Idle Time
-            if (currentTime < p.arrival) {
-                timeline.push({ id: 'IDLE', start: currentTime, end: p.arrival });
-                currentTime = p.arrival;
+    // ── Progress bar (full-width, outside scroll) ──────────────────────
+    const progWrap = document.createElement('div');
+    progWrap.id = 'gantt-progress-wrap';
+    progWrap.innerHTML = `<div id="gantt-progress-bar"></div>`;
+    wrapper.insertBefore(progWrap, scrollWrap);
+
+    // ── Control bar ────────────────────────────────────────────────────
+    const ctrlBar = document.createElement('div');
+    ctrlBar.id = 'gantt-controls';
+    ctrlBar.innerHTML = `
+        <div class="gc-left">
+            <button class="gc-btn" id="gc-playpause">&#9646;&#9646; Pause</button>
+            <button class="gc-btn" id="gc-restart-anim">&#8635; Restart</button>
+        </div>
+        <div class="gc-center">
+            <div class="gc-time-display">
+                <span class="gc-time-label">Time</span>
+                <span class="gc-time-val" id="gc-clock">0</span>
+            </div>
+            <div class="gc-proc-wrap">
+                <span class="gc-proc-label">Running</span>
+                <span class="gc-proc" id="gc-running">—</span>
+            </div>
+        </div>
+        <div class="gc-right">
+            <span class="gc-speed-label">Speed</span>
+            ${SPEEDS.map((s,i) => `<button class="gc-speed-btn ${i===speedIdx?'active':''}" data-idx="${i}">${s.label}</button>`).join('')}
+        </div>
+    `;
+    wrapper.appendChild(ctrlBar);
+
+    document.getElementById('gc-playpause').onclick    = togglePause;
+    document.getElementById('gc-restart-anim').onclick = () => startAnimation([...animTimeline], [...animProcesses]);
+    ctrlBar.querySelectorAll('.gc-speed-btn').forEach(btn => {
+        btn.onclick = () => {
+            speedIdx = +btn.dataset.idx;
+            ctrlBar.querySelectorAll('.gc-speed-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            if (!animPaused && !animDone) {
+                clearInterval(animHandle);
+                animHandle = setInterval(tick, SPEEDS[speedIdx].ms);
             }
-            
-            let completionTime = currentTime + p.burst;
-            let turnaroundTime = completionTime - p.arrival;
-            let waitingTime = turnaroundTime - p.burst;
-            
-            // Track Process Execution
-            timeline.push({ id: p.id, start: currentTime, end: completionTime });
-            
-            completedProcesses.push({
-                ...p,
-                completionTime,
-                turnaroundTime,
-                waitingTime
-            });
-            
-            currentTime = completionTime;
-        });
+        };
+    });
 
-        // Return an object containing BOTH the stats and the timeline
-        return { completed: completedProcesses, timeline: timeline }; 
-    }
+    // ── Kick off ───────────────────────────────────────────────────────
+    renderTick();
+    animHandle = setInterval(tick, SPEEDS[speedIdx].ms);
+}
 
-    function displayResults(results) {
-        resultsPanel.style.display = 'block'; // Reveal the results section
-        resultsBody.innerHTML = ''; // Clear old results
+// ── renderTick: redraw chart from scratch up to animTick ──────────────────
+// This is the key function. It draws:
+//   • All fully-completed blocks at exact width
+//   • The currently-active block at partial width (only ticks elapsed so far)
+//   • Nothing for future blocks
+function renderTick() {
+    const t      = animTick;
+    const total  = animTotal;
+    const chart  = document.getElementById('gantt-chart');
+    if (!chart) return;
 
-        let totalTAT = 0;
-        let totalWT = 0;
+    // Clear only the block elements (keep cursor if any)
+    chart.innerHTML = '';
 
-        results.forEach(r => {
-            totalTAT += r.turnaroundTime;
-            totalWT += r.waitingTime;
+    let drawnUpTo = 0; // tracks how many px we've painted
 
-            const rowHtml = `
-                <tr>
-                    <td>${r.id}</td>
-                    <td>${r.arrival}</td>
-                    <td>${r.burst}</td>
-                    <td>${r.completionTime}</td>
-                    <td>${r.turnaroundTime}</td>
-                    <td>${r.waitingTime}</td>
-                </tr>
-            `;
-            resultsBody.insertAdjacentHTML('beforeend', rowHtml);
-        });
+    for (let bi = 0; bi < animTimeline.length; bi++) {
+        const block    = animTimeline[bi];
+        const blockDur = block.end - block.start;
+        const pData    = block.id !== 'IDLE' ? animProcesses.find(p => p.id === block.id) : null;
 
-        document.getElementById('avg-tat').innerText = (totalTAT / results.length).toFixed(2);
-        document.getElementById('avg-wt').innerText = (totalWT / results.length).toFixed(2);
-        
-        // Scroll down to results smoothly
-        resultsPanel.scrollIntoView({ behavior: 'smooth' });
-    }
+        if (t <= block.start) break; // this block hasn't started yet — stop
 
-    // ==========================================
-    // 2. ROUND ROBIN (RR)
-    // ==========================================
-    function calculateRR(processes, quantum) {
-        let remaining = processes.map(p => ({ ...p, rem: p.burst }));
-        remaining.sort((a, b) => a.arrival - b.arrival); 
-        
-        let time = 0;
-        let completed = [];
-        let timeline = [];
-        let queue = [];
-        let i = 0;
+        // How many time units of this block have elapsed?
+        const elapsed = Math.min(t - block.start, blockDur);
+        const px      = elapsed * PX_PER_UNIT;
 
-        while (i < remaining.length && remaining[i].arrival <= time) {
-            queue.push(remaining[i]); i++;
-        }
+        const el = document.createElement('div');
+        el.classList.add('gantt-block');
+        el.style.width    = `${px}px`;
+        el.style.minWidth = `${px}px`;
+        el.style.flexShrink = '0';
 
-        while (completed.length < processes.length) {
-            if (queue.length === 0) {
-                let nextArrival = remaining[i].arrival;
-                timeline.push({ id: 'IDLE', start: time, end: nextArrival });
-                time = nextArrival;
-                
-                while (i < remaining.length && remaining[i].arrival <= time) {
-                    queue.push(remaining[i]); i++;
-                }
-            } else {
-                let p = queue.shift();
-                let runTime = Math.min(p.rem, quantum);
-                
-                // Track execution
-                timeline.push({ id: p.id, start: time, end: time + runTime });
-                
-                p.rem -= runTime;
-                time += runTime;
-
-                while (i < remaining.length && remaining[i].arrival <= time) {
-                    queue.push(remaining[i]); i++;
-                }
-
-                if (p.rem === 0) {
-                    completed.push({
-                        ...p,
-                        completionTime: time,
-                        turnaroundTime: time - p.arrival,
-                        waitingTime: time - p.arrival - p.burst
-                    });
-                } else {
-                    queue.push(p);
-                }
-            }
-        }
-        return { completed, timeline };
-    }
-
-    // ==========================================
-    // 3. SHORTEST JOB FIRST - NON-PREEMPTIVE (SJF-NP)
-    // ==========================================
-    function calculateSJF_NP(processes) {
-        let remaining = [...processes].map(p => ({ ...p }));
-        let time = 0;
-        let completed = [];
-        let timeline = [];
-
-        while (remaining.length > 0) {
-            let available = remaining.filter(p => p.arrival <= time);
-            
-            if (available.length === 0) {
-                let nextArrival = Math.min(...remaining.map(p => p.arrival));
-                timeline.push({ id: 'IDLE', start: time, end: nextArrival });
-                time = nextArrival;
-                available = remaining.filter(p => p.arrival <= time);
-            }
-            
-            available.sort((a, b) => a.burst - b.burst || a.arrival - b.arrival);
-            let p = available[0];
-            
-            timeline.push({ id: p.id, start: time, end: time + p.burst });
-            time += p.burst; 
-            
-            completed.push({
-                ...p,
-                completionTime: time,
-                turnaroundTime: time - p.arrival,
-                waitingTime: time - p.arrival - p.burst
-            });
-            
-            remaining = remaining.filter(x => x.id !== p.id);
-        }
-        return { completed, timeline };
-    }
-
-    // ==========================================
-    // 4. SHORTEST JOB FIRST - PREEMPTIVE (SRTF)
-    // ==========================================
-    function calculateSJF_P(processes) {
-        let remaining = processes.map(p => ({ ...p, rem: p.burst }));
-        let time = 0;
-        let completed = [];
-        let timeline = [];
-        let completedCount = 0;
-        let n = processes.length;
-
-        let currentId = null;
-        let blockStart = 0;
-
-        while (completedCount < n) {
-            let available = remaining.filter(p => p.arrival <= time && p.rem > 0);
-            
-            if (available.length === 0) {
-                let future = remaining.filter(p => p.rem > 0);
-                let nextTime = Math.min(...future.map(p => p.arrival));
-                
-                if (currentId !== 'IDLE') {
-                    if (currentId !== null && time > blockStart) timeline.push({ id: currentId, start: blockStart, end: time });
-                    currentId = 'IDLE';
-                    blockStart = time;
-                }
-                time = nextTime;
-                continue;
-            }
-
-            available.sort((a, b) => a.rem - b.rem || a.arrival - b.arrival);
-            let p = available[0];
-
-            // If a new process is taking over the CPU, log the previous block
-            if (currentId !== p.id) {
-                if (currentId !== null && time > blockStart) timeline.push({ id: currentId, start: blockStart, end: time });
-                currentId = p.id;
-                blockStart = time;
-            }
-
-            p.rem -= 1;
-            time += 1;
-
-            if (p.rem === 0) {
-                completedCount++;
-                completed.push({
-                    id: p.id, arrival: p.arrival, burst: p.burst, priority: p.priority,
-                    completionTime: time,
-                    turnaroundTime: time - p.arrival,
-                    waitingTime: time - p.arrival - p.burst
-                });
-            }
-        }
-        // Push the final block
-        if (currentId !== null && time > blockStart) timeline.push({ id: currentId, start: blockStart, end: time });
-
-        return { completed, timeline };
-    }
-
-    // ==========================================
-    // 5. PRIORITY - NON-PREEMPTIVE
-    // ==========================================
-    function calculatePriority_NP(processes, rule) {
-        let remaining = [...processes].map(p => ({ ...p }));
-        let time = 0;
-        let completed = [];
-        let timeline = [];
-
-        while (remaining.length > 0) {
-            let available = remaining.filter(p => p.arrival <= time);
-            
-            if (available.length === 0) {
-                let nextArrival = Math.min(...remaining.map(p => p.arrival));
-                timeline.push({ id: 'IDLE', start: time, end: nextArrival });
-                time = nextArrival;
-                available = remaining.filter(p => p.arrival <= time);
-            }
-            
-            available.sort((a, b) => sortPriority(a, b, rule));
-            let p = available[0];
-            
-            timeline.push({ id: p.id, start: time, end: time + p.burst });
-            time += p.burst; 
-            
-            completed.push({
-                ...p,
-                completionTime: time,
-                turnaroundTime: time - p.arrival,
-                waitingTime: time - p.arrival - p.burst
-            });
-            
-            remaining = remaining.filter(x => x.id !== p.id);
-        }
-        return { completed, timeline };
-    }
-
-    // ==========================================
-    // 6. PRIORITY - PREEMPTIVE
-    // ==========================================
-    function calculatePriority_P(processes, rule) {
-        let remaining = processes.map(p => ({ ...p, rem: p.burst }));
-        let time = 0;
-        let completed = [];
-        let timeline = [];
-        let completedCount = 0;
-        let n = processes.length;
-
-        let currentId = null;
-        let blockStart = 0;
-
-        while (completedCount < n) {
-            let available = remaining.filter(p => p.arrival <= time && p.rem > 0);
-            
-            if (available.length === 0) {
-                let future = remaining.filter(p => p.rem > 0);
-                let nextTime = Math.min(...future.map(p => p.arrival));
-                
-                if (currentId !== 'IDLE') {
-                    if (currentId !== null && time > blockStart) timeline.push({ id: currentId, start: blockStart, end: time });
-                    currentId = 'IDLE';
-                    blockStart = time;
-                }
-                time = nextTime;
-                continue;
-            }
-
-            available.sort((a, b) => sortPriority(a, b, rule));
-            let p = available[0];
-
-            if (currentId !== p.id) {
-                if (currentId !== null && time > blockStart) timeline.push({ id: currentId, start: blockStart, end: time });
-                currentId = p.id;
-                blockStart = time;
-            }
-
-            p.rem -= 1;
-            time += 1;
-
-            if (p.rem === 0) {
-                completedCount++;
-                completed.push({
-                    id: p.id, arrival: p.arrival, burst: p.burst, priority: p.priority,
-                    completionTime: time,
-                    turnaroundTime: time - p.arrival,
-                    waitingTime: time - p.arrival - p.burst
-                });
-            }
-        }
-        if (currentId !== null && time > blockStart) timeline.push({ id: currentId, start: blockStart, end: time });
-
-        return { completed, timeline };
-    }
-
-    function renderGanttChart(timeline, originalProcesses) {
-        const chartContainer = document.getElementById('gantt-chart');
-        const labelsContainer = document.getElementById('gantt-labels');
-        const ganttWrapper = document.getElementById('gantt-container');
-        
-        chartContainer.innerHTML = '';
-        labelsContainer.innerHTML = '';
-        ganttWrapper.style.display = 'block';
-
-        if (timeline.length === 0) return;
-
-        const totalTime = timeline[timeline.length - 1].end;
-
-        timeline.forEach((block, index) => {
-            const duration = block.end - block.start;
-            
-            const blockEl = document.createElement('div');
-            blockEl.classList.add('gantt-block');
-            blockEl.style.flexGrow = duration; 
-            
-            if (block.id === 'IDLE') {
-                blockEl.classList.add('gantt-idle');
-            } else {
-                // Find the original process data to get its color
-                const pData = originalProcesses.find(p => p.id === block.id);
-                
-                // Use the scraped color, fallback to gray if not found
-                blockEl.style.backgroundColor = pData ? pData.color : '#888';
-                blockEl.innerText = block.id;
-            }
-            chartContainer.appendChild(blockEl);
-
-            const startLabel = document.createElement('div');
-            startLabel.classList.add('gantt-label');
-            startLabel.innerText = block.start;
-            startLabel.style.left = `${(block.start / totalTime) * 100}%`;
-            labelsContainer.appendChild(startLabel);
-
-            if (index === timeline.length - 1) {
-                const endLabel = document.createElement('div');
-                endLabel.classList.add('gantt-label');
-                endLabel.innerText = block.end;
-                endLabel.style.left = `100%`;
-                labelsContainer.appendChild(endLabel);
-            }
-        });
-    }
-
-    // ==========================================
-    // PRIORITY HELPER FUNCTION
-    // ==========================================
-    function sortPriority(a, b, rule) {
-        if (rule === 'high-num-high-prio') {
-            return b.priority - a.priority || a.arrival - b.arrival; // Higher number wins
+        if (block.id === 'IDLE') {
+            el.classList.add('gantt-idle');
         } else {
-            return a.priority - b.priority || a.arrival - b.arrival; // Lower number wins
+            el.style.backgroundColor = pData ? pData.color : '#888';
+            // Show label only when block is wide enough
+            if (px >= 28) el.innerText = block.id;
+        }
+
+        // Is this the block the cursor is currently inside?
+        const isActive = t > block.start && t < block.end;
+        if (isActive) el.classList.add('gantt-active');
+
+        chart.appendChild(el);
+        drawnUpTo += px;
+    }
+
+    // ── Cursor line: sits at the right edge of everything drawn ──────────
+    const cursor = document.createElement('div');
+    cursor.id = 'gantt-cursor';
+    cursor.style.left = `${t * PX_PER_UNIT}px`;
+    chart.appendChild(cursor);
+
+    // ── Highlight active time pip ────────────────────────────────────────
+    document.querySelectorAll('.gantt-time-pip').forEach(p => p.classList.remove('gantt-pip-active'));
+    const pip = document.querySelector(`.gantt-time-pip[data-t="${t}"]`);
+    if (pip) pip.classList.add('gantt-pip-active');
+
+    // ── Auto-scroll so cursor stays visible ──────────────────────────────
+    const wrap = document.getElementById('gantt-scroll-wrap');
+    if (wrap) {
+        const cursorPx  = t * PX_PER_UNIT;
+        const wrapWidth = wrap.clientWidth;
+        const scrollL   = wrap.scrollLeft;
+        // Scroll right when cursor is within 60px of the right edge
+        if (cursorPx > scrollL + wrapWidth - 60) {
+            wrap.scrollLeft = cursorPx - wrapWidth + 80;
         }
     }
 
-    // ==========================================
-    // RESULTS BUTTON FUNCTION
-    // ==========================================
+    // ── Control bar updates ───────────────────────────────────────────────
+    const clockEl  = document.getElementById('gc-clock');
+    if (clockEl) clockEl.innerText = t;
 
-    const menuBtn = document.getElementById('menu-btn');
-    const restartBtn = document.getElementById('restart-sim-btn');
-
-    if (menuBtn) {
-        menuBtn.addEventListener('click', () => {
-            if (typeof javaApp !== 'undefined' && javaApp !== null) {
-                javaApp.navigate('/index.html');
-            } else {
-                window.location.href = '../index.html'; 
-            }
-        });
+    const runEl = document.getElementById('gc-running');
+    if (runEl) {
+        // Find which block owns tick t
+        const activeBlock = animTimeline.find(b => t > b.start && t <= b.end);
+        if (!activeBlock || t === 0) {
+            runEl.innerText         = t === 0 ? 'Starting…' : '—';
+            runEl.style.color       = 'rgba(255,255,255,0.4)';
+            runEl.style.borderColor = 'rgba(255,255,255,0.1)';
+            runEl.style.background  = 'rgba(255,255,255,0.04)';
+        } else if (activeBlock.id === 'IDLE') {
+            runEl.innerText         = 'IDLE';
+            runEl.style.color       = '#aaa';
+            runEl.style.borderColor = '#555';
+            runEl.style.background  = 'rgba(255,255,255,0.05)';
+        } else {
+            const pData             = animProcesses.find(p => p.id === activeBlock.id);
+            runEl.innerText         = activeBlock.id;
+            runEl.style.color       = pData ? pData.color : '#fff';
+            runEl.style.borderColor = pData ? pData.color : 'transparent';
+            runEl.style.background  = pData ? pData.color + '28' : '';
+        }
     }
 
-    if (restartBtn) {
-        restartBtn.addEventListener('click', () => {
-            const resultsPanel = document.getElementById('results-panel');
-            resultsPanel.style.display = 'none';
+    // ── Progress bar ──────────────────────────────────────────────────────
+    const pb = document.getElementById('gantt-progress-bar');
+    if (pb) pb.style.width = `${(t / total) * 100}%`;
+}
 
-            const clearBtn = document.getElementById('clr-btn');
-            if (clearBtn) {
-                clearBtn.click();
-            }
+function tick() {
+    if (animPaused || animDone) return;
+    animTick++;
+    renderTick();
+    if (animTick >= animTotal) finishAnimation();
+}
 
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
+function finishAnimation() {
+    clearInterval(animHandle);
+    animHandle = null;
+    animDone   = true;
+
+    // Draw final state — all blocks full
+    renderTick();
+
+    // Remove active pulse from last block
+    document.querySelectorAll('.gantt-active').forEach(el => el.classList.remove('gantt-active'));
+
+    // Move cursor to very end
+    const cursor = document.getElementById('gantt-cursor');
+    if (cursor) cursor.style.left = `${animTotal * PX_PER_UNIT}px`;
+
+    // Highlight last pip
+    document.querySelectorAll('.gantt-time-pip').forEach(p => p.classList.remove('gantt-pip-active'));
+    const lastPip = document.querySelector(`.gantt-time-pip[data-t="${animTotal}"]`);
+    if (lastPip) lastPip.classList.add('gantt-pip-active');
+
+    // Clock
+    const clockEl = document.getElementById('gc-clock');
+    if (clockEl) { clockEl.innerText = animTotal; clockEl.style.color = '#69ff9a'; }
+
+    const runEl = document.getElementById('gc-running');
+    if (runEl) {
+        runEl.innerText         = 'Done ✓';
+        runEl.style.color       = '#69ff9a';
+        runEl.style.borderColor = '#69ff9a';
+        runEl.style.background  = 'rgba(105,255,154,0.1)';
     }
+
+    const ppBtn = document.getElementById('gc-playpause');
+    if (ppBtn) { ppBtn.textContent = '▶ Play'; ppBtn.disabled = true; ppBtn.style.opacity = '0.4'; }
+
+    const pb = document.getElementById('gantt-progress-bar');
+    if (pb) { pb.style.width = '100%'; pb.style.background = 'linear-gradient(90deg,#69ff9a,#4cc9f0)'; }
+
+    // Reveal results table
+    setTimeout(() => {
+        displayResults(pendingTable);
+        const tbody = document.getElementById('results-body');
+        if (tbody) {
+            tbody.style.opacity   = '0';
+            tbody.style.transform = 'translateY(8px)';
+            void tbody.offsetHeight;
+            tbody.style.transition = 'opacity 0.45s ease, transform 0.45s ease';
+            tbody.style.opacity    = '1';
+            tbody.style.transform  = 'translateY(0)';
+        }
+    }, 350);
+}
+
+function togglePause() {
+    if (animDone) return;
+    animPaused = !animPaused;
+    const btn  = document.getElementById('gc-playpause');
+    if (animPaused) {
+        btn.textContent = '▶ Play';
+        clearInterval(animHandle); animHandle = null;
+    } else {
+        btn.textContent = '⏸ Pause';
+        animHandle = setInterval(tick, SPEEDS[speedIdx].ms);
+    }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+//  ALGORITHMS  (unchanged)
+// ══════════════════════════════════════════════════════════════════════════
+function calculateFCFS(processes) {
+    let sorted=[...processes].sort((a,b)=>a.arrival-b.arrival),cur=0,done=[],tl=[];
+    sorted.forEach(p=>{
+        if(cur<p.arrival){tl.push({id:'IDLE',start:cur,end:p.arrival});cur=p.arrival;}
+        let ct=cur+p.burst;
+        tl.push({id:p.id,start:cur,end:ct});
+        done.push({...p,completionTime:ct,turnaroundTime:ct-p.arrival,waitingTime:ct-p.arrival-p.burst});
+        cur=ct;
+    });
+    return {completed:done,timeline:tl};
+}
+
+function calculateRR(processes,quantum){
+    let rem=processes.map(p=>({...p,rem:p.burst}));
+    rem.sort((a,b)=>a.arrival-b.arrival);
+    let time=0,done=[],tl=[],queue=[],i=0;
+    while(i<rem.length&&rem[i].arrival<=time){queue.push(rem[i]);i++;}
+    while(done.length<processes.length){
+        if(!queue.length){
+            let nxt=rem[i].arrival;tl.push({id:'IDLE',start:time,end:nxt});time=nxt;
+            while(i<rem.length&&rem[i].arrival<=time){queue.push(rem[i]);i++;}
+        }else{
+            let p=queue.shift(),run=Math.min(p.rem,quantum);
+            tl.push({id:p.id,start:time,end:time+run});p.rem-=run;time+=run;
+            while(i<rem.length&&rem[i].arrival<=time){queue.push(rem[i]);i++;}
+            if(p.rem===0)done.push({...p,completionTime:time,turnaroundTime:time-p.arrival,waitingTime:time-p.arrival-p.burst});
+            else queue.push(p);
+        }
+    }
+    return {completed:done,timeline:tl};
+}
+
+function calculateSJF_NP(processes){
+    let rem=[...processes].map(p=>({...p})),time=0,done=[],tl=[];
+    while(rem.length){
+        let avail=rem.filter(p=>p.arrival<=time);
+        if(!avail.length){let n=Math.min(...rem.map(p=>p.arrival));tl.push({id:'IDLE',start:time,end:n});time=n;avail=rem.filter(p=>p.arrival<=time);}
+        avail.sort((a,b)=>a.burst-b.burst||a.arrival-b.arrival);
+        let p=avail[0];tl.push({id:p.id,start:time,end:time+p.burst});time+=p.burst;
+        done.push({...p,completionTime:time,turnaroundTime:time-p.arrival,waitingTime:time-p.arrival-p.burst});
+        rem=rem.filter(x=>x.id!==p.id);
+    }
+    return {completed:done,timeline:tl};
+}
+
+function calculateSJF_P(processes){
+    let rem=processes.map(p=>({...p,rem:p.burst})),time=0,done=[],tl=[],cnt=0,n=processes.length,curId=null,bs=0;
+    while(cnt<n){
+        let avail=rem.filter(p=>p.arrival<=time&&p.rem>0);
+        if(!avail.length){
+            let nxt=Math.min(...rem.filter(p=>p.rem>0).map(p=>p.arrival));
+            if(curId!=='IDLE'){if(curId!==null&&time>bs)tl.push({id:curId,start:bs,end:time});curId='IDLE';bs=time;}
+            time=nxt;continue;
+        }
+        avail.sort((a,b)=>a.rem-b.rem||a.arrival-b.arrival);
+        let p=avail[0];
+        if(curId!==p.id){if(curId!==null&&time>bs)tl.push({id:curId,start:bs,end:time});curId=p.id;bs=time;}
+        p.rem--;time++;
+        if(p.rem===0){cnt++;done.push({id:p.id,arrival:p.arrival,burst:p.burst,priority:p.priority,completionTime:time,turnaroundTime:time-p.arrival,waitingTime:time-p.arrival-p.burst});}
+    }
+    if(curId!==null&&time>bs)tl.push({id:curId,start:bs,end:time});
+    return {completed:done,timeline:tl};
+}
+
+function calculatePriority_NP(processes,rule){
+    let rem=[...processes].map(p=>({...p})),time=0,done=[],tl=[];
+    while(rem.length){
+        let avail=rem.filter(p=>p.arrival<=time);
+        if(!avail.length){let n=Math.min(...rem.map(p=>p.arrival));tl.push({id:'IDLE',start:time,end:n});time=n;avail=rem.filter(p=>p.arrival<=time);}
+        avail.sort((a,b)=>sortPriority(a,b,rule));
+        let p=avail[0];tl.push({id:p.id,start:time,end:time+p.burst});time+=p.burst;
+        done.push({...p,completionTime:time,turnaroundTime:time-p.arrival,waitingTime:time-p.arrival-p.burst});
+        rem=rem.filter(x=>x.id!==p.id);
+    }
+    return {completed:done,timeline:tl};
+}
+
+function calculatePriority_P(processes,rule){
+    let rem=processes.map(p=>({...p,rem:p.burst})),time=0,done=[],tl=[],cnt=0,n=processes.length,curId=null,bs=0;
+    while(cnt<n){
+        let avail=rem.filter(p=>p.arrival<=time&&p.rem>0);
+        if(!avail.length){
+            let nxt=Math.min(...rem.filter(p=>p.rem>0).map(p=>p.arrival));
+            if(curId!=='IDLE'){if(curId!==null&&time>bs)tl.push({id:curId,start:bs,end:time});curId='IDLE';bs=time;}
+            time=nxt;continue;
+        }
+        avail.sort((a,b)=>sortPriority(a,b,rule));
+        let p=avail[0];
+        if(curId!==p.id){if(curId!==null&&time>bs)tl.push({id:curId,start:bs,end:time});curId=p.id;bs=time;}
+        p.rem--;time++;
+        if(p.rem===0){cnt++;done.push({id:p.id,arrival:p.arrival,burst:p.burst,priority:p.priority,completionTime:time,turnaroundTime:time-p.arrival,waitingTime:time-p.arrival-p.burst});}
+    }
+    if(curId!==null&&time>bs)tl.push({id:curId,start:bs,end:time});
+    return {completed:done,timeline:tl};
+}
+
+function sortPriority(a,b,rule){
+    return rule==='high-num-high-prio'?b.priority-a.priority||a.arrival-b.arrival:a.priority-b.priority||a.arrival-b.arrival;
+}
+
+function displayResults(results){
+    resultsBody.innerHTML='';
+    let tTAT=0,tWT=0;
+    results.forEach(r=>{
+        tTAT+=r.turnaroundTime; tWT+=r.waitingTime;
+        resultsBody.insertAdjacentHTML('beforeend',`
+            <tr>
+                <td>${r.id}</td>
+                <td>${r.burst}</td>
+                <td>${r.arrival}</td>
+                <td>${r.priority}</td>
+                <td>${r.waitingTime}</td>
+                <td>${r.turnaroundTime}</td>
+                <td></td>
+                <td></td>
+            </tr>`);
+    });
+    // Avg values only on the last row's last two cells (matching image layout)
+    const rows = resultsBody.querySelectorAll('tr');
+    if (rows.length) {
+        const lastRow = rows[rows.length - 1];
+        lastRow.cells[6].innerText = (tWT  / results.length).toFixed(2);
+        lastRow.cells[7].innerText = (tTAT / results.length).toFixed(2);
+    }
+    document.getElementById('avg-wt').innerText  = (tWT  / results.length).toFixed(2);
+    document.getElementById('avg-tat').innerText = (tTAT / results.length).toFixed(2);
+}
+
+document.getElementById('menu-btn')?.addEventListener('click',()=>{
+    if(typeof javaApp!=='undefined' && javaApp !== null) {
+        javaApp.navigate('home'); // Use simple name
+    } else {
+        window.location.href='../index.html';
+    }
+});
+
+document.getElementById('restart-sim-btn')?.addEventListener('click',()=>{
+    if(animHandle){clearInterval(animHandle);animHandle=null;}
+    resultsPanel.style.display='none';
+    document.getElementById('clr-btn')?.click();
+    window.scrollTo({top:0,behavior:'smooth'});
+});
 
 });
