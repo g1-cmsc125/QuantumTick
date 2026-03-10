@@ -51,6 +51,8 @@
 
     <build>
         <plugins>
+            
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -77,6 +79,9 @@
                         <manifest>
                             <mainClass>com.group1.Launcher</mainClass> 
                         </manifest>
+                        <manifestEntries>
+                        <SplashScreen-Image>images/splashScreen.gif</SplashScreen-Image>
+                    </manifestEntries>
                     </archive>
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
@@ -109,9 +114,6 @@
                             <outfile>${project.build.directory}/quantum-tick.exe</outfile>
                             <jar>${project.build.directory}/${project.artifactId}-${project.version}-jar-with-dependencies.jar</jar>
                             <errTitle>Application Error</errTitle>
-                            <classPath>
-                                <mainClass>com.group1.Launcher</mainClass>
-                            </classPath>
                             <jre>
                                 <path>%JAVA_HOME%</path>
                                 <minVersion>21</minVersion>
