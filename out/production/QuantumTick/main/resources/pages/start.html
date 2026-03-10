@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../styles/style.css">
+    <link rel="stylesheet" href="../styles/start.css">
+    <link rel="stylesheet" href="../styles/resultsStyle.css">
+    <script src="../scripts/start.js"></script>
+    <script src="../scripts/logic.js"></script>
+
+    
+    <title>QuantumTick - Simulation</title>
+</head>
+<body class="simulation-page">
+    <header class="sim-header">
+        <img src="../images/qt-logo.png" alt="QT Logo" class="sim-logo">
+        <h1 class="sim-title">QuantumTick</h1>
+    </header>
+
+    <main class="sim-content">
+        <!-- Left column: panel + buttons below -->
+        <div class="sim-col">
+            <section class="glass-panel">
+                <h3>Processes</h3>
+                <p class="subtitle">Add a process to the simulation</p>
+                
+                <div class="process-grid" id="process-table-body">
+                    <!-- Header row -->
+                    <div class="pg-cell pg-header"></div>
+                    <div class="pg-cell pg-header">Burst time</div>
+                    <div class="pg-cell pg-header">Arrival time</div>
+                    <div class="pg-cell pg-header">Priority No.</div>
+
+                    <!-- Process rows container — spans all 4 columns, uses subgrid -->
+                    <div id="process-rows">
+                        <!-- P1 -->
+                        <div class="pg-cell"><span class="badge cell-box p1">P1</span></div>
+                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                        <!-- P2 -->
+                        <div class="pg-cell"><span class="badge cell-box p2">P2</span></div>
+                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                        <!-- P3 -->
+                        <div class="pg-cell"><span class="badge cell-box p3">P3</span></div>
+                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                        <div class="pg-cell"><input class="cell-box" type="number" value="0"></div>
+                    </div>
+                </div>
+            </section>
+
+            <button class="btn-main gold" id="add-process-btn">Addi process</button>
+            <div class="sim-utilities">
+                <button id="rnd-btn" class="btn-sub">Randomize</button>
+                <button id="upl-btn" class="btn-sub">Upload</button>
+                <button id="clr-btn" class="btn-sub">Clear</button>
+            </div>
+        </div>
+
+        <!-- Right column: algorithm panel + quantum button below -->
+        <div class="sim-col">
+            <section class="glass-panel">
+                <h3>CPU Algorithm</h3>
+                <p>Select a scheduling algorithm</p>
+                
+                <select class="algo-dropdown" id="algo-select">
+                    <option value="fcfs">First Come First Serve (FCFS)</option>
+                    <option value="rr">Round Robin (RR)</option>
+                    <option value="sjf-np">Shortest Job First (Non-preemptive)</option>
+                    <option value="sjf-p">Shortest Job First (Preemptive / SRTF)</option>
+                    <option value="prio-np">Priority (Non-preemptive)</option>
+                    <option value="prio-p">Priority (Preemptive)</option>
+                </select>
+
+                <div id="quantum-container" class="conditional-input" style="display: none; margin-top: 15px;">
+                    <label for="quantum-time">Quantum Time (q):</label>
+                    <input type="number" id="quantum-time" class="cell-box" value="2" min="1">
+                </div>
+
+                <div id="priority-rule-container" class="conditional-input" style="display: none; margin-top: 15px;">
+                    <label for="priority-rule">Priority Rule:out</label>
+                    <select id="priority-rule" class="cell-box prio-dropdown">
+                        <option value="high-num-high-prio">Higher Number = High Priority</option>
+                        <option value="low-num-high-prio">Lower Number = High Priority</option>
+                    </select>
+                </div>
+            </section>
+           
+            <button class="btn-main red-dim" id="run-sim-btn">Run Simulation</button>
+
+        </div>
+    </main> 
+        <section class="results-section glass-panel" style="display: none;" id="results-panel">
+            <h3>Simulation Results</h3>
+            <div class="gantt-container" id="gantt-container" style="display: none; margin-bottom: 20px;">
+            <h4 style="margin-bottom: 10px;">Gantt Chart</h4>
+            <div class="gantt-chart" id="gantt-chart">
+                </div>
+            <div class="gantt-labels" id="gantt-labels">
+                </div>
+        </div>
+
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Process</th>
+                        <th>Arrival Time</th>
+                        <th>Burst Time</th>
+                        <th>Completion Time</th>
+                        <th>Turnaround Time (TAT)</th>
+                        <th>Waiting Time (WT)</th>
+                    </tr>
+                </thead>
+                <tbody id="results-body">
+                    </tbody>
+            </table>
+            
+            <div class="averages">
+                <p><strong>Average Turnaround Time:</strong> <span id="avg-tat">0.00</span> ms</p>
+                <p><strong>Average Waiting Time:</strong> <span id="avg-wt">0.00</span> ms</p>
+            </div>
+        </section>
+
+           
+        </div>
+    </main>
+</body>
+</html>

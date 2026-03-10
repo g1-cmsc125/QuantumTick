@@ -159,6 +159,107 @@ function startAnimation(timeline, procs) {
         pip.appendChild(num);
         axis.appendChild(pip);
     }
+algoSelect.addEventListener('change', (e) => {
+        const selected = e.target.value;
+        
+        // Toggle Quantum Time input
+        quantumContainer.style.display = (selected === 'rr') ? 'block' : 'none';
+        
+        // Toggle Priority Rule dropdown
+        priorityContainer.style.display = (selected.startsWith('prio')) ? 'block' : 'none';
+    });
+
+    // --- Run Simulation Engine ---
+runSimBtn.addEventListener('click', () => {
+    const processes = getProcessData();
+    const selectedAlgo = algoSelect.value;
+    const errorDisplay = document.getElementById('error-msg'); 
+    let results = [];
+
+    // IMPORTANT: Clear the old message immediately so the new one can show up
+    if (errorDisplay) {
+        errorDisplay.innerText = '';
+    }
+
+    // 1. Validate Process Count (3-20)
+    if (processes.length < 3 || processes.length > 20) {
+        errorDisplay.innerText = `Invalid Range: Number of processes must be 3-20 (Current: ${processes.length})`;
+        return;
+    }
+
+    // 2. Validate Data Ranges
+    const priorities = processes.map(p => p.priority);
+    const uniquePriorities = new Set(priorities);
+
+    for (const p of processes) {
+        if (isNaN(p.burst) || p.burst < 1 || p.burst > 30) {
+            errorDisplay.innerText = `Invalid Range: Process ${p.id} Burst Time must be 1-30.`;
+            return;
+        }
+        if (isNaN(p.arrival) || p.arrival < 0 || p.arrival > 30) {
+            errorDisplay.innerText = `Invalid Range: Process ${p.id} Arrival Time must be 0-30.`;
+            return;
+        }
+        if (isNaN(p.priority) || p.priority < 1 || p.priority > 20) {
+            errorDisplay.innerText = `Invalid Range: Process ${p.id} Priority must be 1-20.`;
+            return;
+        }
+    }
+
+    // 3. Duplicate Priority Check
+    if (uniquePriorities.size !== processes.length) {
+        errorDisplay.innerText = 'Invalid Range: Duplicate priority numbers found. Each must be unique.';
+        return;
+    }
+
+    // 4. Time Quantum Check (1-10)
+    if (selectedAlgo === 'rr') {
+        const quantumInput = document.getElementById('quantum-time');
+        const quantum = quantumInput ? parseInt(quantumInput.value, 10) : NaN;
+        if (isNaN(quantum) || quantum < 1 || quantum > 10) {
+            errorDisplay.innerText = 'Invalid Range: Time Quantum must be between 1 and 10.';
+            return;
+        }
+    }
+
+    switch(selectedAlgo) {
+        case 'fcfs':
+            results = calculateFCFS(processes);
+            break;
+        case 'rr': {
+            const quantum = parseInt(document.getElementById('quantum-time').value, 10);
+            results = calculateRR(processes, quantum);
+            break;
+        }
+        case 'sjf-np':
+            results = calculateSJF_NP(processes);
+            break;
+        case 'sjf-p':
+            results = calculateSJF_P(processes);
+            break;
+        case 'prio-np': {
+            let rule = document.getElementById('priority-rule')?.value || 'low-num-high-prio';
+            results = calculatePriority_NP(processes, rule);
+            break;
+        }
+        case 'prio-p': {
+            let rule = document.getElementById('priority-rule')?.value || 'low-num-high-prio';
+            results = calculatePriority_P(processes, rule);
+            break;
+        }
+        default:
+            errorDisplay.innerText = 'Algorithm not implemented yet!';
+            return;
+    }
+
+    // --- DISPLAY RESULTS ---
+    const finalTableData = results.completed.sort((a, b) => 
+        parseInt(a.id.substring(1)) - parseInt(b.id.substring(1))
+    );
+    
+    displayResults(finalTableData);
+    renderGanttChart(results.timeline, processes); 
+});
 
     // Re-insert into scroll wrapper
     scrollWrap.appendChild(chartEl);

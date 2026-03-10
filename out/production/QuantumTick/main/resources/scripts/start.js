@@ -76,41 +76,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function randomize() {
-    const cells = [...procRows.children];   
-    const rowCount = cells.length / 4;      
+        const cells = [...procRows.children];   // flat list of all pg-cell divs
+        const rowCount = cells.length / 4;      // each row = 4 cells
 
-    // Priority pool: unique values from 1 to 20, then shuffled
-    const priorityPool = Array.from({ length: 20 }, (_, i) => i + 1)
-        .sort(() => Math.random() - 0.5);
+        // Priority pool sized to current row count — unique values from 1 to rowCount
+        const priorityPool = Array.from({ length: rowCount }, (_, i) => i + 1)
+            .sort(() => Math.random() - 0.5);
 
-    for (let i = 0; i < rowCount; i++) {
-        const offset = i * 4;
-        const burstInput    = cells[offset + 1].querySelector('input');
-        const arrivalInput  = cells[offset + 2].querySelector('input');
-        const priorityInput = cells[offset + 3].querySelector('input');
+        for (let i = 0; i < rowCount; i++) {
+            const offset = i * 4;
+            // cells[offset]     -> badge (skip)
+            // cells[offset + 1] -> burst time  input
+            // cells[offset + 2] -> arrival time input
+            // cells[offset + 3] -> priority no. input
 
-        // Apply your specific ranges
-        const burst    = Math.floor(Math.random() * 30) + 1;  // 1-30
-        const arrival  = Math.floor(Math.random() * 31);       // 0-30
-        const priority = priorityPool[i];                      // 1-20 Unique
+            const burstInput    = cells[offset + 1].querySelector('input');
+            const arrivalInput  = cells[offset + 2].querySelector('input');
+            const priorityInput = cells[offset + 3].querySelector('input');
 
-        burstInput.value = burst;
-        arrivalInput.value = arrival;
-        priorityInput.value = priority;
-        
-        // Update datasets for tracking
-        burstInput.dataset.value = String(burst);
-        arrivalInput.dataset.value = String(arrival);
-        priorityInput.dataset.value = String(priority);
+            const burst    = Math.floor(Math.random() * 30) + 1;  // 1-30
+            const arrival  = Math.floor(Math.random() * 31);       // 0-30
+            const priority = priorityPool[i];                      // unique 1-20
+
+            burstInput.value         = burst;
+            burstInput.dataset.value = String(burst);
+
+            arrivalInput.value         = arrival;
+            arrivalInput.dataset.value = String(arrival);
+
+            priorityInput.value         = priority;
+            priorityInput.dataset.value = String(priority);
+        }
     }
-
-    // NEW: Randomize Time Quantum (1-10)
-    const quantumInput = document.getElementById('quantum-time');
-    if (quantumInput) {
-        const randomQuantum = Math.floor(Math.random() * 10) + 1; // 1-10
-        quantumInput.value = randomQuantum;
-    }
-}
 
     function upload() {
         try {
