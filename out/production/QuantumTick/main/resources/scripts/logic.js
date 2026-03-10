@@ -17,7 +17,7 @@ function getProcessData() {
             
             processes.push({
                 id: badge.innerText.trim(),
-                color: badge.style.backgroundColor, // <-- NEW: Save the exact color
+                color: badge.style.backgroundColor,
                 burst: parseInt(rows[i+1].querySelector('input').value, 10),
                 arrival: parseInt(rows[i+2].querySelector('input').value, 10),
                 priority: parseInt(rows[i+3].querySelector('input').value, 10)
@@ -36,8 +36,7 @@ algoSelect.addEventListener('change', (e) => {
         priorityContainer.style.display = (selected.startsWith('prio')) ? 'block' : 'none';
     });
 
-    // --- Run Simulation Engine ---
-    // --- Run Simulation Engine ---
+    // Run Simulation Engine
     runSimBtn.addEventListener('click', () => {
         const processes = getProcessData();
         const selectedAlgo = algoSelect.value;
@@ -49,7 +48,7 @@ algoSelect.addEventListener('change', (e) => {
             return;
         }
 
-        // NEW: Check for invalid inputs (Burst time of 0 or blank cells)
+        // Check for invalid inputs (Burst time of 0 or blank cells)
         const hasInvalidInputs = processes.some(p => isNaN(p.burst) || isNaN(p.arrival) || isNaN(p.priority) || p.burst <= 0);
         
         if (hasInvalidInputs) {
@@ -91,14 +90,6 @@ algoSelect.addEventListener('change', (e) => {
                 alert('Algorithm not implemented yet!');
                 return;
         }
-
-        // Sort results by ID (P1, P2, P3) for a cleaner output table
-        //results.sort((a, b) => parseInt(a.id.substring(1)) - parseInt(b.id.substring(1)));
-       // displayResults(results);
-       // Inside your switch statement, after an algorithm runs:
-        // const simData = calculateFCFS(processes);
-        
-        // After the switch statement finishes:
        
         const finalTableData = results.completed.sort((a, b) => parseInt(a.id.substring(1)) - parseInt(b.id.substring(1)));
         
@@ -109,14 +100,16 @@ algoSelect.addEventListener('change', (e) => {
 
     });
 
-    
+    // ==========================================
+    // 1. FIRST-COME, FIRST-SERVED (FCFS)
+    // ==========================================
 
-function calculateFCFS(processes) {
+    function calculateFCFS(processes) {
         let sorted = [...processes].sort((a, b) => a.arrival - b.arrival);
         
         let currentTime = 0;
         let completedProcesses = [];
-        let timeline = []; // <-- NEW: Array to track execution blocks
+        let timeline = [];
 
         sorted.forEach(p => {
             // Track Idle Time
@@ -232,9 +225,9 @@ function calculateFCFS(processes) {
         return { completed, timeline };
     }
 
-    // ==========================================
+    // ==============================================
     // 3. SHORTEST JOB FIRST - NON-PREEMPTIVE (SJF-NP)
-    // ==========================================
+    // ================================================
     function calculateSJF_NP(processes) {
         let remaining = [...processes].map(p => ({ ...p }));
         let time = 0;

@@ -1,14 +1,4 @@
-/* ═══════════════════════════════════════════════════════════════════════
-   gantt-animation.css  —  input scroll + gantt animation + results table
-   ═══════════════════════════════════════════════════════════════════════ */
-
-/* ────────────────────────────────────────────────────────────────────────
-   1. INPUT PANEL — fixed header + scrollable rows, both use same column widths
-   Key rule: subgrid cannot coexist with overflow on the same element.
-   Solution: header and #process-rows both declare the same explicit columns.
-   ──────────────────────────────────────────────────────────────────────── */
-
-/* Column widths — defined once, reused in both header and rows */
+/* Gantt chart animation */
 :root { --col-badge: 80px; --col-input: 100px; }
 
 /* Outer wrapper just stacks header above the scroll area */
@@ -17,7 +7,6 @@
     width: 100%;
 }
 
-/* Header: 4 columns, never scrolls */
 .process-grid-header {
     display: grid;
     grid-template-columns: var(--col-badge) repeat(3, var(--col-input));
@@ -75,9 +64,7 @@
 }
 
 
-/* ────────────────────────────────────────────────────────────────────────
-   2. RESULTS SECTION TITLE
-   ──────────────────────────────────────────────────────────────────────── */
+/* Results section  */
 
 #results-panel {
     max-width: 1200px;
@@ -88,7 +75,6 @@
     gap: 20px;
 }
 
-/* "Results" heading with a decorative line */
 .results-section-title {
     display: flex;
     align-items: center;
@@ -112,9 +98,7 @@
 }
 
 
-/* ────────────────────────────────────────────────────────────────────────
-   3. RESULT CARDS — glassmorphism matching the sim panels
-   ──────────────────────────────────────────────────────────────────────── */
+/* Results card */
 
 .result-card {
     background: rgba(255, 255, 255, 0.03);
@@ -126,7 +110,7 @@
     color: white;
 }
 
-/* Card header: matches .glass-panel h3 style */
+/* Card header */
 .result-card-header {
     margin-bottom: 1.4rem;
     padding-bottom: 0.9rem;
@@ -143,9 +127,7 @@
 }
 
 
-/* ────────────────────────────────────────────────────────────────────────
-   4. GANTT CHART inside its card
-   ──────────────────────────────────────────────────────────────────────── */
+/* Gantt chart */
 
 #gantt-progress-wrap {
     width: 100%;
@@ -357,9 +339,7 @@
 }
 
 
-/* ────────────────────────────────────────────────────────────────────────
-   5. RESULTS TABLE — glassmorphic, scrollable, bordered
-   ──────────────────────────────────────────────────────────────────────── */
+/* Results table */
 
 .results-table-wrap {
     max-height: 360px;

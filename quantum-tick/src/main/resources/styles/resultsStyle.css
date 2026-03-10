@@ -1,4 +1,4 @@
-/* --- Gantt Chart Styles --- */
+/* Gantt Chart Styles */
 .gantt-wrapper {
     margin: 20px 0;
     width: 100%;
@@ -21,14 +21,12 @@
     border-right: 1px solid #333;
     font-weight: bold;
     color: #fff;
-    /* Transition for a smooth render effect */
     transition: all 0.3s ease; 
 }
 .gantt-block:last-child {
     border-right: none;
 }
 
-/* Optional: A special class for idle CPU time */
 .gantt-idle {
     background-color: transparent !important;
     color: #888;

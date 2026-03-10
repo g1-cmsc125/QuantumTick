@@ -1,10 +1,11 @@
-/* about.html styling */
+/* How it works style */
+
 body.about-page {
-    justify-content: flex-start; /* Restored from original */
-    align-items: flex-start;     /* Restored from original */
+    justify-content: flex-start;
+    align-items: flex-start;
     padding: 4rem 6rem; 
     flex-direction: column;
-    overflow-y: auto;           /* Ensures you can scroll through the steps */
+    overflow-y: auto;
 }
 
 .about-header {
@@ -18,7 +19,7 @@ body.about-page {
 .header-left {
     display: flex;
     align-items: center;
-    gap: 1.5rem; /* Space between small logo and title */
+    gap: 1.5rem;
 }
 
 .logo-container-small {
