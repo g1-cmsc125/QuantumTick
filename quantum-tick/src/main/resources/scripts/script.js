@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     startBtn.addEventListener('click', () => {
         if (typeof javaApp !== 'undefined' && javaApp !== null) {
-            javaApp.navigate('start'); // Use simple name
+            javaApp.navigate('start');
         } else {
             window.location.href = 'pages/start.html'; 
         }
@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     hiwBtn.addEventListener('click', () => {
         if (typeof javaApp !== 'undefined' && javaApp !== null) {
-            javaApp.navigate('hiw'); // Use simple name
+            javaApp.navigate('hiw');
         } else {
             window.location.href = 'pages/hiw.html'; 
         }

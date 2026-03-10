@@ -11,8 +11,8 @@ body {
     background: radial-gradient(circle at top, #2f104d 0%, #05020a 60%, #000000 100%);
     min-height: 100vh;
     display: flex;
-    justify-content: center; /* Original center alignment */
-    align-items: center;    /* Original center alignment */
+    justify-content: center;
+    align-items: center;
     font-family: 'Space Mono', 'Courier New', monospace;
     overflow: hidden;
 }

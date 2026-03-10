@@ -7,19 +7,19 @@ const runSimBtn         = document.getElementById('run-sim-btn');
 const resultsPanel      = document.getElementById('results-panel');
 const resultsBody       = document.getElementById('results-body');
 
-// ─── Playback state ────────────────────────────────────────────────────────
+// Playback state
 let animHandle    = null;
-let animTick      = 0;      // current time unit (0 … total)
-let animTotal     = 0;      // total time units
-let animTimeline  = [];     // [{id, start, end, color}]
+let animTick      = 0;
+let animTotal     = 0; 
+let animTimeline  = [];
 let animProcesses = [];
 let animPaused    = false;
 let animDone      = false;
 let speedIdx      = 1;
 let pendingTable  = null;
 
-// pixels-per-time-unit — chart will be this wide per unit
-const PX_PER_UNIT = 36; // each time unit = 36px wide
+// Pixel per time unit
+const PX_PER_UNIT = 36;
 
 const SPEEDS = [
     { label: '0.5×', ms: 700 },
@@ -29,7 +29,7 @@ const SPEEDS = [
     { label: '8×',   ms:  30 },
 ];
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
+// Helper function to read process data from the table
 function getProcessData() {
     const rows = [...document.querySelectorAll('#process-rows .pg-cell')];
     const out  = [];
@@ -51,15 +51,56 @@ algoSelect.addEventListener('change', e => {
     priorityContainer.style.display = e.target.value.startsWith('prio') ? 'block' : 'none';
 });
 
-// ─── Run simulation ────────────────────────────────────────────────────────
+// To run simulation
 runSimBtn.addEventListener('click', () => {
     const procs = getProcessData();
-    const algo  = algoSelect.value;
+    const algo = algoSelect.value;
+    const errorDiv = document.getElementById('error-msg');
+    
+    // Reset error message at the start of every click
+    errorDiv.innerText = '';
 
-    if (!procs.length) { alert('Please add at least one process.'); return; }
-    if (procs.some(p => isNaN(p.burst) || isNaN(p.arrival) || isNaN(p.priority) || p.burst <= 0)) {
-        alert('All processes must have valid numbers and Burst Time >= 1.');
+    // Validate number of processes (3-20)
+    if (procs.length < 3 || procs.length > 20) {
+        errorDiv.innerText = 'The number of processes should be between 3-20.';
         return;
+    }
+
+    // Validate Burst, Arrival, and Priority ranges
+    const priorities = procs.map(p => p.priority);
+    const uniquePriorities = new Set(priorities);
+
+    for (let p of procs) {
+        if (isNaN(p.burst) || p.burst < 1 || p.burst > 30) {
+            errorDiv.innerText = 'The burst time should be between 1-30.';
+            return;
+        }
+        if (isNaN(p.arrival) || p.arrival < 0 || p.arrival > 30) {
+            errorDiv.innerText = 'The arrival time should be between 0-30.';
+            return;
+        }
+        if (isNaN(p.priority) || p.priority < 1 || p.priority > 20) {
+            errorDiv.innerText = 'The priority number should be between 1-20.';
+            return;
+        }
+    }
+
+    // Check for Duplicate Priorities
+    if (uniquePriorities.size !== priorities.length) {
+        errorDiv.innerText = 'Priority numbers must be unique (no duplications).';
+        return;
+    }
+
+    // Validate quantum time for Round Robin
+    let q = 1; // default
+    if (algo === 'rr') {
+        const quantumInput = document.getElementById('quantum-time');
+        q = parseInt(quantumInput.value, 10);
+
+        if (isNaN(q) || q < 1 || q > 10) {
+            errorDiv.innerText = 'The quantum time must be between 1 and 10.';
+            return;
+        }
     }
 
     let res;
@@ -74,13 +115,13 @@ runSimBtn.addEventListener('click', () => {
         case 'sjf-p':   res = calculateSJF_P(procs);  break;
         case 'prio-np': res = calculatePriority_NP(procs, document.getElementById('priority-rule').value); break;
         case 'prio-p':  res = calculatePriority_P(procs,  document.getElementById('priority-rule').value); break;
-        default: alert('Algorithm not implemented.'); return;
+        default: errorDiv.innerText = 'Algorithm not implemented.'; return;
     }
 
     pendingTable = res.completed.sort((a,b) => parseInt(a.id.slice(1)) - parseInt(b.id.slice(1)));
 
     resultsPanel.style.display = 'block';
-    resultsBody.innerHTML      = '';
+    resultsBody.innerHTML = '';
     document.getElementById('avg-tat').innerText = '—';
     document.getElementById('avg-wt').innerText  = '—';
     resultsPanel.scrollIntoView({ behavior: 'smooth' });
@@ -88,15 +129,7 @@ runSimBtn.addEventListener('click', () => {
     startAnimation(res.timeline, procs);
 });
 
-// ══════════════════════════════════════════════════════════════════════════
-//  ANIMATION ENGINE
-//  Strategy: fixed-width chart (total * PX_PER_UNIT px wide).
-//  Each tick, we advance by 1 time unit.
-//  • Completed blocks: rendered at their exact pixel width, stay put.
-//  • Current (active) block: grows one PX_PER_UNIT slice per tick.
-//  • Future blocks: not rendered yet — only empty space ahead.
-//  Time axis is pre-drawn with all numbers so it's a real ruler.
-// ══════════════════════════════════════════════════════════════════════════
+//  Animation engine
 function startAnimation(timeline, procs) {
     if (animHandle) { clearInterval(animHandle); animHandle = null; }
 
@@ -111,32 +144,30 @@ function startAnimation(timeline, procs) {
     animTotal     = total;
     const chartPx = total * PX_PER_UNIT;
 
-    // ── Wipe & prepare DOM ─────────────────────────────────────────────
+    // Wipe & prepare DOM
     const wrapper  = document.getElementById('gantt-container');
     const chartEl  = document.getElementById('gantt-chart');
     const labelRow = document.getElementById('gantt-labels');
 
     wrapper.style.display   = 'block';
-    labelRow.style.display  = 'none'; // we build our own axis
+    labelRow.style.display  = 'none';
 
     ['gantt-controls','gantt-progress-wrap','gantt-timeline-row','gantt-scroll-wrap'].forEach(id => {
         document.getElementById(id)?.remove();
     });
     chartEl.innerHTML = '';
 
-    // ── Scrollable wrapper around chart + axis ─────────────────────────
-    // We detach chartEl from the DOM momentarily, wrap it, re-attach
+    // Scrollable wrapper
     const scrollWrap = document.createElement('div');
     scrollWrap.id = 'gantt-scroll-wrap';
 
-    // ── Chart area (fixed pixel width) ────────────────────────────────
     chartEl.style.width    = `${chartPx}px`;
     chartEl.style.minWidth = `${chartPx}px`;
     chartEl.style.position = 'relative';
     chartEl.style.display  = 'flex';
     chartEl.style.height   = '52px';
 
-    // ── Time axis (same fixed pixel width, pre-drawn) ──────────────────
+    // Time axis
     const axis = document.createElement('div');
     axis.id            = 'gantt-timeline-row';
     axis.style.width   = `${chartPx}px`;
@@ -159,107 +190,108 @@ function startAnimation(timeline, procs) {
         pip.appendChild(num);
         axis.appendChild(pip);
     }
-algoSelect.addEventListener('change', (e) => {
-        const selected = e.target.value;
-        
-        // Toggle Quantum Time input
-        quantumContainer.style.display = (selected === 'rr') ? 'block' : 'none';
-        
-        // Toggle Priority Rule dropdown
-        priorityContainer.style.display = (selected.startsWith('prio')) ? 'block' : 'none';
+
+    algoSelect.addEventListener('change', (e) => {
+            const selected = e.target.value;
+            
+            // Toggle Quantum Time input
+            quantumContainer.style.display = (selected === 'rr') ? 'block' : 'none';
+            
+            // Toggle Priority Rule dropdown
+            priorityContainer.style.display = (selected.startsWith('prio')) ? 'block' : 'none';
     });
 
-    // --- Run Simulation Engine ---
-runSimBtn.addEventListener('click', () => {
-    const processes = getProcessData();
-    const selectedAlgo = algoSelect.value;
-    const errorDisplay = document.getElementById('error-msg'); 
-    let results = [];
+    // Run simulation button click handler (also checks for input validity before running)
+    runSimBtn.addEventListener('click', () => {
+        const processes = getProcessData();
+        const selectedAlgo = algoSelect.value;
+        const errorDisplay = document.getElementById('error-msg'); 
+        let results = [];
 
-    // IMPORTANT: Clear the old message immediately so the new one can show up
-    if (errorDisplay) {
-        errorDisplay.innerText = '';
-    }
+        // Clear old message
+        if (errorDisplay) {
+            errorDisplay.innerText = '';
+        }
 
-    // 1. Validate Process Count (3-20)
-    if (processes.length < 3 || processes.length > 20) {
-        errorDisplay.innerText = `Invalid Range: Number of processes must be 3-20 (Current: ${processes.length})`;
-        return;
-    }
-
-    // 2. Validate Data Ranges
-    const priorities = processes.map(p => p.priority);
-    const uniquePriorities = new Set(priorities);
-
-    for (const p of processes) {
-        if (isNaN(p.burst) || p.burst < 1 || p.burst > 30) {
-            errorDisplay.innerText = `Invalid Range: Process ${p.id} Burst Time must be 1-30.`;
+        // Validate Process Count (3-20)
+        if (processes.length < 3 || processes.length > 20) {
+            errorDisplay.innerText = `Invalid Range: Number of processes must be 3-20 (Current: ${processes.length})`;
             return;
         }
-        if (isNaN(p.arrival) || p.arrival < 0 || p.arrival > 30) {
-            errorDisplay.innerText = `Invalid Range: Process ${p.id} Arrival Time must be 0-30.`;
+
+        // Validate Data Ranges
+        const priorities = processes.map(p => p.priority);
+        const uniquePriorities = new Set(priorities);
+
+        for (const p of processes) {
+            if (isNaN(p.burst) || p.burst < 1 || p.burst > 30) {
+                errorDisplay.innerText = `Invalid Range: Process ${p.id} Burst Time must be 1-30.`;
+                return;
+            }
+            if (isNaN(p.arrival) || p.arrival < 0 || p.arrival > 30) {
+                errorDisplay.innerText = `Invalid Range: Process ${p.id} Arrival Time must be 0-30.`;
+                return;
+            }
+            if (isNaN(p.priority) || p.priority < 1 || p.priority > 20) {
+                errorDisplay.innerText = `Invalid Range: Process ${p.id} Priority must be 1-20.`;
+                return;
+            }
+        }
+
+        // Duplicate Priority Check
+        if (uniquePriorities.size !== processes.length) {
+            errorDisplay.innerText = 'Invalid Range: Duplicate priority numbers found. Each must be unique.';
             return;
         }
-        if (isNaN(p.priority) || p.priority < 1 || p.priority > 20) {
-            errorDisplay.innerText = `Invalid Range: Process ${p.id} Priority must be 1-20.`;
-            return;
-        }
-    }
 
-    // 3. Duplicate Priority Check
-    if (uniquePriorities.size !== processes.length) {
-        errorDisplay.innerText = 'Invalid Range: Duplicate priority numbers found. Each must be unique.';
-        return;
-    }
+        // Time Quantum Check (1-10)
+        if (selectedAlgo === 'rr') {
+            const quantumInput = document.getElementById('quantum-time');
+            const quantum = quantumInput ? parseInt(quantumInput.value, 10) : NaN;
+            if (isNaN(quantum) || quantum < 1 || quantum > 10) {
+                errorDisplay.innerText = 'Invalid Range: Time Quantum must be between 1 and 10.';
+                return;
+            }
+        }
 
-    // 4. Time Quantum Check (1-10)
-    if (selectedAlgo === 'rr') {
-        const quantumInput = document.getElementById('quantum-time');
-        const quantum = quantumInput ? parseInt(quantumInput.value, 10) : NaN;
-        if (isNaN(quantum) || quantum < 1 || quantum > 10) {
-            errorDisplay.innerText = 'Invalid Range: Time Quantum must be between 1 and 10.';
-            return;
+        switch(selectedAlgo) {
+            case 'fcfs':
+                results = calculateFCFS(processes);
+                break;
+            case 'rr': {
+                const quantum = parseInt(document.getElementById('quantum-time').value, 10);
+                results = calculateRR(processes, quantum);
+                break;
+            }
+            case 'sjf-np':
+                results = calculateSJF_NP(processes);
+                break;
+            case 'sjf-p':
+                results = calculateSJF_P(processes);
+                break;
+            case 'prio-np': {
+                let rule = document.getElementById('priority-rule')?.value || 'low-num-high-prio';
+                results = calculatePriority_NP(processes, rule);
+                break;
+            }
+            case 'prio-p': {
+                let rule = document.getElementById('priority-rule')?.value || 'low-num-high-prio';
+                results = calculatePriority_P(processes, rule);
+                break;
+            }
+            default:
+                errorDisplay.innerText = 'Algorithm not implemented yet!';
+                return;
         }
-    }
 
-    switch(selectedAlgo) {
-        case 'fcfs':
-            results = calculateFCFS(processes);
-            break;
-        case 'rr': {
-            const quantum = parseInt(document.getElementById('quantum-time').value, 10);
-            results = calculateRR(processes, quantum);
-            break;
-        }
-        case 'sjf-np':
-            results = calculateSJF_NP(processes);
-            break;
-        case 'sjf-p':
-            results = calculateSJF_P(processes);
-            break;
-        case 'prio-np': {
-            let rule = document.getElementById('priority-rule')?.value || 'low-num-high-prio';
-            results = calculatePriority_NP(processes, rule);
-            break;
-        }
-        case 'prio-p': {
-            let rule = document.getElementById('priority-rule')?.value || 'low-num-high-prio';
-            results = calculatePriority_P(processes, rule);
-            break;
-        }
-        default:
-            errorDisplay.innerText = 'Algorithm not implemented yet!';
-            return;
-    }
-
-    // --- DISPLAY RESULTS ---
-    const finalTableData = results.completed.sort((a, b) => 
-        parseInt(a.id.substring(1)) - parseInt(b.id.substring(1))
-    );
-    
-    displayResults(finalTableData);
-    renderGanttChart(results.timeline, processes); 
-});
+        // Display results
+        const finalTableData = results.completed.sort((a, b) => 
+            parseInt(a.id.substring(1)) - parseInt(b.id.substring(1))
+        );
+        
+        displayResults(finalTableData);
+        renderGanttChart(results.timeline, processes); 
+    });
 
     // Re-insert into scroll wrapper
     scrollWrap.appendChild(chartEl);
@@ -268,13 +300,13 @@ runSimBtn.addEventListener('click', () => {
     // Find where gantt-container's children are and insert scrollWrap before labelRow
     wrapper.insertBefore(scrollWrap, labelRow);
 
-    // ── Progress bar (full-width, outside scroll) ──────────────────────
+    // Progress bar
     const progWrap = document.createElement('div');
     progWrap.id = 'gantt-progress-wrap';
     progWrap.innerHTML = `<div id="gantt-progress-bar"></div>`;
     wrapper.insertBefore(progWrap, scrollWrap);
 
-    // ── Control bar ────────────────────────────────────────────────────
+    // Control bar
     const ctrlBar = document.createElement('div');
     ctrlBar.id = 'gantt-controls';
     ctrlBar.innerHTML = `
@@ -313,35 +345,28 @@ runSimBtn.addEventListener('click', () => {
         };
     });
 
-    // ── Kick off ───────────────────────────────────────────────────────
+    // Kick off
     renderTick();
     animHandle = setInterval(tick, SPEEDS[speedIdx].ms);
 }
 
-// ── renderTick: redraw chart from scratch up to animTick ──────────────────
-// This is the key function. It draws:
-//   • All fully-completed blocks at exact width
-//   • The currently-active block at partial width (only ticks elapsed so far)
-//   • Nothing for future blocks
+// Redraw chart from scratch up to animTick
 function renderTick() {
     const t      = animTick;
     const total  = animTotal;
     const chart  = document.getElementById('gantt-chart');
     if (!chart) return;
 
-    // Clear only the block elements (keep cursor if any)
     chart.innerHTML = '';
-
-    let drawnUpTo = 0; // tracks how many px we've painted
+    let drawnUpTo = 0;
 
     for (let bi = 0; bi < animTimeline.length; bi++) {
         const block    = animTimeline[bi];
         const blockDur = block.end - block.start;
         const pData    = block.id !== 'IDLE' ? animProcesses.find(p => p.id === block.id) : null;
 
-        if (t <= block.start) break; // this block hasn't started yet — stop
+        if (t <= block.start) break;
 
-        // How many time units of this block have elapsed?
         const elapsed = Math.min(t - block.start, blockDur);
         const px      = elapsed * PX_PER_UNIT;
 
@@ -355,11 +380,9 @@ function renderTick() {
             el.classList.add('gantt-idle');
         } else {
             el.style.backgroundColor = pData ? pData.color : '#888';
-            // Show label only when block is wide enough
             if (px >= 28) el.innerText = block.id;
         }
 
-        // Is this the block the cursor is currently inside?
         const isActive = t > block.start && t < block.end;
         if (isActive) el.classList.add('gantt-active');
 
@@ -367,36 +390,33 @@ function renderTick() {
         drawnUpTo += px;
     }
 
-    // ── Cursor line: sits at the right edge of everything drawn ──────────
+    // Curson line
     const cursor = document.createElement('div');
     cursor.id = 'gantt-cursor';
     cursor.style.left = `${t * PX_PER_UNIT}px`;
     chart.appendChild(cursor);
 
-    // ── Highlight active time pip ────────────────────────────────────────
+    // Highlight active time pip
     document.querySelectorAll('.gantt-time-pip').forEach(p => p.classList.remove('gantt-pip-active'));
     const pip = document.querySelector(`.gantt-time-pip[data-t="${t}"]`);
     if (pip) pip.classList.add('gantt-pip-active');
 
-    // ── Auto-scroll so cursor stays visible ──────────────────────────────
+    // Auto-scroll so cursor stays visible
     const wrap = document.getElementById('gantt-scroll-wrap');
     if (wrap) {
         const cursorPx  = t * PX_PER_UNIT;
         const wrapWidth = wrap.clientWidth;
         const scrollL   = wrap.scrollLeft;
-        // Scroll right when cursor is within 60px of the right edge
         if (cursorPx > scrollL + wrapWidth - 60) {
             wrap.scrollLeft = cursorPx - wrapWidth + 80;
         }
     }
 
-    // ── Control bar updates ───────────────────────────────────────────────
     const clockEl  = document.getElementById('gc-clock');
     if (clockEl) clockEl.innerText = t;
 
     const runEl = document.getElementById('gc-running');
     if (runEl) {
-        // Find which block owns tick t
         const activeBlock = animTimeline.find(b => t > b.start && t <= b.end);
         if (!activeBlock || t === 0) {
             runEl.innerText         = t === 0 ? 'Starting…' : '—';
@@ -417,7 +437,7 @@ function renderTick() {
         }
     }
 
-    // ── Progress bar ──────────────────────────────────────────────────────
+    // Progress bar
     const pb = document.getElementById('gantt-progress-bar');
     if (pb) pb.style.width = `${(t / total) * 100}%`;
 }
@@ -436,11 +456,7 @@ function finishAnimation() {
 
     // Draw final state — all blocks full
     renderTick();
-
-    // Remove active pulse from last block
     document.querySelectorAll('.gantt-active').forEach(el => el.classList.remove('gantt-active'));
-
-    // Move cursor to very end
     const cursor = document.getElementById('gantt-cursor');
     if (cursor) cursor.style.left = `${animTotal * PX_PER_UNIT}px`;
 
@@ -452,7 +468,6 @@ function finishAnimation() {
     // Clock
     const clockEl = document.getElementById('gc-clock');
     if (clockEl) { clockEl.innerText = animTotal; clockEl.style.color = '#69ff9a'; }
-
     const runEl = document.getElementById('gc-running');
     if (runEl) {
         runEl.innerText         = 'Done ✓';
@@ -496,7 +511,7 @@ function togglePause() {
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-//  ALGORITHMS  (unchanged)
+//  ALGORITHMS
 // ══════════════════════════════════════════════════════════════════════════
 function calculateFCFS(processes) {
     let sorted=[...processes].sort((a,b)=>a.arrival-b.arrival),cur=0,done=[],tl=[];
@@ -615,7 +630,6 @@ function displayResults(results){
                 <td></td>
             </tr>`);
     });
-    // Avg values only on the last row's last two cells (matching image layout)
     const rows = resultsBody.querySelectorAll('tr');
     if (rows.length) {
         const lastRow = rows[rows.length - 1];

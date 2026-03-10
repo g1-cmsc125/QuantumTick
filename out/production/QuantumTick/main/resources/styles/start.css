@@ -1,6 +1,5 @@
 /* Override global flex centering for this page */
 
-
 body.simulation-page {
     display: block;
     padding: 3rem;
@@ -40,7 +39,6 @@ body.simulation-page {
     flex: 1;
     min-width: 0;
     gap: 0;
-    /* buttons use their own margin */
 }
 
 .glass-panel {
@@ -75,7 +73,7 @@ body.simulation-page {
     color: #E0506E;
 }
 
-/* --- Process Grid (CSS Grid, no table) --- */
+/* Process Grid */
 
 .process-grid {
     display: grid;
@@ -85,7 +83,7 @@ body.simulation-page {
     width: fit-content;
 }
 
-/* Process rows wrapper — spans all 4 columns, inherits parent column tracks */
+/* Process rows wrapper */
 #process-rows {
     display: grid;
     grid-column: 1 / -1;
@@ -179,7 +177,7 @@ input.cell-box::-webkit-inner-spin-button {
     margin: 0;
 }
 
-/* --- Utility Buttons --- */
+/* Utility Buttons*/
 .sim-utilities {
     display: flex;
     gap: 1rem;
@@ -202,7 +200,7 @@ input.cell-box::-webkit-inner-spin-button {
     background: rgba(255, 255, 255, 0.15);
 }
 
-/* --- Algorithm Dropdown --- */
+/* Algorithm Dropdown*/
 .algo-dropdown {
     width: 100%;
     padding: 0.85rem 1.2rem;
@@ -226,7 +224,7 @@ input.cell-box::-webkit-inner-spin-button {
     color: white;
 }
 
-/* --- Algo Details --- */
+/* Algo Details */
 .algo-details {
     font-size: 0.85rem;
     color: rgba(255, 255, 255, 0.7);
@@ -238,7 +236,7 @@ input.cell-box::-webkit-inner-spin-button {
     color: rgba(255, 255, 255, 0.85);
 }
 
-/* --- Results table --- */
+/* Results table */
 .results-table th,
 .results-table td {
     padding: 12px 20px;

@@ -16,8 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return BADGE_COLORS[Math.floor(Math.random() * BADGE_COLORS.length)];
     }
 
-    // --- Row Factory ---
-    // Mirrors the pg-cell structure exactly, color always randomized
+    // Row Factory: Mirrors the pg-cell structure exactly, color always randomized
     function createRow(index) {
         const color = getRandomColor();
         const label = `P${index + 1}`;
@@ -29,20 +28,20 @@ document.addEventListener('DOMContentLoaded', () => {
         ].join('');
     }
 
-    // --- Populate with n fresh randomized rows ---
+    // Populate with n fresh randomized rows
     function populateRows(count = MIN_ROWS) {
         let html = '';
         for (let i = 0; i < count; i++) html += createRow(i);
         procRows.innerHTML = html;
     }
 
-    // --- Button listeners ---
+    // Button listeners
     addPBtn.onclick = addProcess;
     document.getElementById('rnd-btn').onclick = randomize;
     document.getElementById('upl-btn').onclick = upload;
     document.getElementById('clr-btn').onclick = clear;
 
-    // --- Functionalities ---
+    // Functionalities
     function addProcess() {
         const currentCount = procRows.querySelectorAll('.badge.cell-box').length;
         if (currentCount >= MAX_ROWS) {
@@ -54,7 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function clear() {
         // Fade the whole container out as one unit — avoids per-cell
-        // reflow flicker that JavaFX WebView causes with staggered transitions
         procRows.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
         procRows.style.opacity    = '0';
         procRows.style.transform  = 'scale(0.97)';
@@ -140,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- CSV Parser (on window so Java can call: engine.executeScript("parseCSV(...)")) ---
+    // CSV Parser
     window.parseCSV = function parseCSV(text) {
         const EXPECTED_HEADERS = ['burst', 'arrival', 'prio'];
 
@@ -154,7 +152,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // --- Validate header ---
+        // Validate header
         const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
         const headersValid = EXPECTED_HEADERS.every((h, i) => headers[i] === h);
         if (!headersValid || headers.length !== EXPECTED_HEADERS.length) {
@@ -165,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // --- Validate & parse data rows ---
+        // Validate & parse data rows
         const dataLines = lines.slice(1);
 
         if (dataLines.length < MIN_ROWS) {
@@ -232,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // --- All valid: fade out, wipe, repopulate, fade in ---
+        // All valid: fade out, wipe, repopulate, fade in
         procRows.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
         procRows.style.opacity    = '0';
         procRows.style.transform  = 'scale(0.97)';
@@ -261,14 +259,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 260);
     }
 
-    // --- Input value tracking ---
+    // Input value tracking
     procRows.onchange = (e) => {
         if (e.target.matches('input.cell-box')) {
             e.target.dataset.value = e.target.value;
         }
     };
 
-    // --- Init: build the default 3 rows with random colors on first load ---
+    // Init: build the default 3 rows with random colors on first load
     populateRows();
 });
 
