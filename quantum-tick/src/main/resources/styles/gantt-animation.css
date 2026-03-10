@@ -1,0 +1,240 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+
+#gantt-container {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 20px 20px 12px;
+    margin-bottom: 28px;
+}
+
+/* ── Progress bar (sits above the chart) ───────────────────────────── */
+#gantt-progress-wrap {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 2px;
+    margin-bottom: 14px;
+    overflow: hidden;
+}
+
+#gantt-progress-bar {
+    height: 100%;
+    width: 0%;
+    border-radius: 2px;
+    background: linear-gradient(90deg, #7C69FF, #4CC9F0);
+    transition: width 0.1s linear, background 0.5s ease;
+}
+
+/* ── Chart row ──────────────────────────────────────────────────────── */
+.gantt-chart {
+    display: flex;
+    align-items: stretch;
+    height: 48px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+    position: relative;
+}
+
+/* ── Individual blocks ──────────────────────────────────────────────── */
+.gantt-block {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    overflow: hidden;
+    white-space: nowrap;
+    transition: flex-grow 0.08s linear;
+    position: relative;
+    border-right: 1px solid rgba(0,0,0,0.18);
+}
+
+.gantt-block:last-child { border-right: none; }
+
+.gantt-idle {
+    background: repeating-linear-gradient(
+        45deg,
+        rgba(255,255,255,0.04),
+        rgba(255,255,255,0.04) 4px,
+        rgba(255,255,255,0.01) 4px,
+        rgba(255,255,255,0.01) 8px
+    );
+    color: rgba(255,255,255,0.35);
+    font-size: 11px;
+}
+
+/* ── Active (currently executing) block ─────────────────────────────── */
+@keyframes gantt-pulse {
+    0%   { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.6), 0 0 12px rgba(255,255,255,0.25); }
+    50%  { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.2), 0 0 4px  rgba(255,255,255,0.08); }
+    100% { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.6), 0 0 12px rgba(255,255,255,0.25); }
+}
+
+.gantt-block.gantt-active {
+    animation: gantt-pulse 0.9s ease-in-out infinite;
+    z-index: 2;
+}
+
+/* Ripple sweep effect on active block */
+.gantt-block.gantt-active::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -60%;
+    width: 50%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+    animation: gantt-sweep 1.2s ease-in-out infinite;
+}
+
+@keyframes gantt-sweep {
+    0%   { left: -60%; }
+    100% { left: 120%; }
+}
+
+/* ── Time labels ────────────────────────────────────────────────────── */
+.gantt-labels {
+    position: relative;
+    height: 22px;
+    margin-top: 6px;
+}
+
+.gantt-label {
+    position: absolute;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: rgba(255,255,255,0.45);
+    font-variant-numeric: tabular-nums;
+    user-select: none;
+}
+
+.gantt-label-appear {
+    animation: label-pop 0.25s ease forwards;
+}
+
+@keyframes label-pop {
+    from { opacity: 0; transform: translateX(-50%) translateY(-4px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CONTROL BAR
+   ═══════════════════════════════════════════════════════════════════ */
+#gantt-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 18px;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+}
+
+.gc-left, .gc-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.gc-center {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    justify-content: center;
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────── */
+.gc-btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.07);
+    color: rgba(255,255,255,0.85);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.1s;
+    letter-spacing: 0.02em;
+}
+
+.gc-btn:hover:not(:disabled) {
+    background: rgba(255,255,255,0.14);
+    border-color: rgba(255,255,255,0.35);
+    transform: translateY(-1px);
+}
+
+.gc-btn:active:not(:disabled) { transform: translateY(0); }
+
+/* ── CPU Clock display ──────────────────────────────────────────────── */
+.gc-clock-label, .gc-proc-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.gc-clock {
+    font-size: 15px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: #4CC9F0;
+    letter-spacing: 0.04em;
+    min-width: 56px;
+}
+
+.gc-proc {
+    font-size: 14px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 6px;
+    border: 1.5px solid transparent;
+    letter-spacing: 0.05em;
+    transition: color 0.2s, background 0.2s, border-color 0.2s;
+    min-width: 46px;
+    text-align: center;
+}
+
+/* ── Speed buttons ──────────────────────────────────────────────────── */
+.gc-speed-label {
+    font-size: 11px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-right: 2px;
+}
+
+.gc-speed-btn {
+    padding: 4px 10px;
+    border-radius: 5px;
+    border: 1px solid rgba(255,255,255,0.12);
+    background: rgba(255,255,255,0.05);
+    color: rgba(255,255,255,0.55);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.gc-speed-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.85);
+}
+
+.gc-speed-btn.active {
+    background: rgba(124, 105, 255, 0.3);
+    border-color: #7C69FF;
+    color: #c4baff;
+}
+
+/* ── Results table fade-in (animation on finish) ────────────────────── */
+#results-body {
+    transition: opacity 0.5s ease, transform 0.5s ease;
+}
