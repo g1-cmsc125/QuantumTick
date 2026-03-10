@@ -1,17 +1,18 @@
 package com.group1;
 
+import java.awt.SplashScreen;
+
 import javafx.application.Application;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
-import java.awt.SplashScreen;
 
 
 public class App extends Application {
     @Override
     public void init() throws Exception {
-        Thread.sleep(5000); 
+        Thread.sleep(2000); 
     }
 
     @Override
