@@ -2,20 +2,19 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     const startBtn = document.getElementById('btn-start');
+    const hiwBtn = document.getElementById('btn-how');
+    
     startBtn.addEventListener('click', () => {
         if (typeof javaApp !== 'undefined' && javaApp !== null) {
-            // Use Java to navigate when running inside the desktop app (.exe)
-            javaApp.navigate('/pages/start.html');
+            javaApp.navigate('start'); // Use simple name
         } else {
-            // Fallback for regular browser testing
             window.location.href = 'pages/start.html'; 
         }
     });
 
-    const hiwBtn = document.getElementById('btn-how');
     hiwBtn.addEventListener('click', () => {
         if (typeof javaApp !== 'undefined' && javaApp !== null) {
-            javaApp.navigate('/pages/hiw.html');
+            javaApp.navigate('hiw'); // Use simple name
         } else {
             window.location.href = 'pages/hiw.html'; 
         }

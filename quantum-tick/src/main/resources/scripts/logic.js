@@ -501,20 +501,36 @@ function displayResults(results){
     resultsBody.innerHTML='';
     let tTAT=0,tWT=0;
     results.forEach(r=>{
-        tTAT+=r.turnaroundTime;tWT+=r.waitingTime;
+        tTAT+=r.turnaroundTime; tWT+=r.waitingTime;
         resultsBody.insertAdjacentHTML('beforeend',`
             <tr>
-                <td>${r.id}</td><td>${r.arrival}</td><td>${r.burst}</td>
-                <td>${r.completionTime}</td><td>${r.turnaroundTime}</td><td>${r.waitingTime}</td>
+                <td>${r.id}</td>
+                <td>${r.burst}</td>
+                <td>${r.arrival}</td>
+                <td>${r.priority}</td>
+                <td>${r.waitingTime}</td>
+                <td>${r.turnaroundTime}</td>
+                <td></td>
+                <td></td>
             </tr>`);
     });
-    document.getElementById('avg-tat').innerText=(tTAT/results.length).toFixed(2);
-    document.getElementById('avg-wt').innerText =(tWT /results.length).toFixed(2);
+    // Avg values only on the last row's last two cells (matching image layout)
+    const rows = resultsBody.querySelectorAll('tr');
+    if (rows.length) {
+        const lastRow = rows[rows.length - 1];
+        lastRow.cells[6].innerText = (tWT  / results.length).toFixed(2);
+        lastRow.cells[7].innerText = (tTAT / results.length).toFixed(2);
+    }
+    document.getElementById('avg-wt').innerText  = (tWT  / results.length).toFixed(2);
+    document.getElementById('avg-tat').innerText = (tTAT / results.length).toFixed(2);
 }
 
 document.getElementById('menu-btn')?.addEventListener('click',()=>{
-    if(typeof javaApp!=='undefined'&&javaApp)javaApp.navigate('/index.html');
-    else window.location.href='../index.html';
+    if(typeof javaApp!=='undefined' && javaApp !== null) {
+        javaApp.navigate('home'); // Use simple name
+    } else {
+        window.location.href='../index.html';
+    }
 });
 
 document.getElementById('restart-sim-btn')?.addEventListener('click',()=>{
