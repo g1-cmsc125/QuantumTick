@@ -1,5 +1,6 @@
 package com.group1;
 
+import javafx.application.Platform;
 import javafx.concurrent.Worker;
 import javafx.scene.layout.StackPane;
 import javafx.scene.web.WebView;
@@ -14,20 +15,20 @@ public class QuantumFrame extends StackPane {
     private WebView startView;
 
     public QuantumFrame(Stage stage) {
-        // Pass 'this' frame to the bridge so it can control the views
         bridge = new QuantumBridge(this, stage);
-
-        // Load all pages simultaneously into memory
         homeView = createWebView("/index.html");
-        hiwView = createWebView("/pages/hiw.html");
-        startView = createWebView("/pages/start.html");
+        this.getChildren().add(homeView);
 
-        // Hide the sub-pages, leaving only the home screen visible
-        hiwView.setVisible(false);
-        startView.setVisible(false);
-
-        // Add them all to the screen
-        this.getChildren().addAll(startView, hiwView, homeView);
+        Platform.runLater(() -> {
+            hiwView = createWebView("/pages/hiw.html");
+            startView = createWebView("/pages/start.html");
+            
+            hiwView.setVisible(false);
+            startView.setVisible(false);
+            
+            this.getChildren().add(0, hiwView);
+            this.getChildren().add(0, startView);
+        });
     }
 
     private WebView createWebView(String path) {
@@ -50,8 +51,9 @@ public class QuantumFrame extends StackPane {
         return webView;
     }
 
-    // Method to instantly swap which pre-loaded page is visible
     public void switchView(String viewName) {
+        if (homeView == null || hiwView == null || startView == null) return;
+
         homeView.setVisible(false);
         hiwView.setVisible(false);
         startView.setVisible(false);
@@ -63,8 +65,9 @@ public class QuantumFrame extends StackPane {
         }
     }
 
-    // Allows the bridge to send data specifically to the Simulation page
     public void executeOnStartView(String script) {
-        startView.getEngine().executeScript(script);
+        if (startView != null) {
+            startView.getEngine().executeScript(script);
+        }
     }
 }

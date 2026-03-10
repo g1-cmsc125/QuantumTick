@@ -24,13 +24,11 @@
             <artifactId>javafx-controls</artifactId>
             <version>${javafx.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-fxml</artifactId>
             <version>${javafx.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-web</artifactId>
@@ -51,8 +49,6 @@
 
     <build>
         <plugins>
-            
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -68,9 +64,12 @@
                 <version>0.0.8</version>
                 <configuration>
                     <mainClass>com.group1.App</mainClass>
+                    <!-- Maven Plugin Preloader Config -->
+                    <preloader>com.group1.SplashPreloader</preloader>
                 </configuration>
             </plugin>
 
+            <!-- Fat JAR Builder -->
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.6.0</version>
@@ -79,9 +78,6 @@
                         <manifest>
                             <mainClass>com.group1.Launcher</mainClass> 
                         </manifest>
-                        <manifestEntries>
-                        <SplashScreen-Image>images/splashScreen.gif</SplashScreen-Image>
-                    </manifestEntries>
                     </archive>
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
@@ -98,6 +94,7 @@
                 </executions>
             </plugin>
 
+            <!-- .EXE Builder -->
             <plugin>
                 <groupId>com.akathist.maven.plugins.launch4j</groupId>
                 <artifactId>launch4j-maven-plugin</artifactId>
