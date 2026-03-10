@@ -1,40 +1,56 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+/* ═══════════════════════════════════════════════════════════════════
+   GANTT ANIMATION STYLES  —  pixel-width, left-to-right growth
+   ═══════════════════════════════════════════════════════════════════ */
 
+/* ── Gantt container ────────────────────────────────────────────────── */
 #gantt-container {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
     border-radius: 14px;
-    padding: 20px 20px 12px;
+    padding: 18px 18px 14px;
     margin-bottom: 28px;
 }
 
-/* ── Progress bar (sits above the chart) ───────────────────────────── */
+/* ── Progress bar ───────────────────────────────────────────────────── */
 #gantt-progress-wrap {
     width: 100%;
     height: 4px;
-    background: rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.07);
     border-radius: 2px;
     margin-bottom: 14px;
     overflow: hidden;
 }
-
 #gantt-progress-bar {
     height: 100%;
     width: 0%;
     border-radius: 2px;
     background: linear-gradient(90deg, #7C69FF, #4CC9F0);
-    transition: width 0.1s linear, background 0.5s ease;
+    transition: width 0.12s linear, background 0.5s ease;
 }
 
-/* ── Chart row ──────────────────────────────────────────────────────── */
+/* ── Horizontal scroll wrapper (chart + axis scroll together) ───────── */
+#gantt-scroll-wrap {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.12) transparent;
+    padding-bottom: 4px;
+}
+#gantt-scroll-wrap::-webkit-scrollbar        { height: 4px; }
+#gantt-scroll-wrap::-webkit-scrollbar-track  { background: transparent; }
+#gantt-scroll-wrap::-webkit-scrollbar-thumb  { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
+/* ── Chart bar ──────────────────────────────────────────────────────── */
 .gantt-chart {
-    display: flex;
+    display: flex !important;
     align-items: stretch;
-    height: 48px;
+    height: 52px;
     border-radius: 8px;
-    overflow: hidden;
+    overflow: visible;          /* let blocks be visible as they grow */
     border: 1px solid rgba(255,255,255,0.1);
     position: relative;
+    background: rgba(255,255,255,0.02); /* empty space background */
+    box-sizing: border-box;
 }
 
 /* ── Individual blocks ──────────────────────────────────────────────── */
@@ -42,83 +58,122 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    height: 100%;
     font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.04em;
     color: #fff;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.45);
     overflow: hidden;
     white-space: nowrap;
-    transition: flex-grow 0.08s linear;
-    position: relative;
     border-right: 1px solid rgba(0,0,0,0.18);
+    flex-shrink: 0;
+    box-sizing: border-box;
+    /* NO transition on width — we want instantaneous per-tick steps */
 }
+.gantt-block:last-of-type { border-right: none; }
 
-.gantt-block:last-child { border-right: none; }
-
+/* Idle hatching */
 .gantt-idle {
     background: repeating-linear-gradient(
         45deg,
-        rgba(255,255,255,0.04),
-        rgba(255,255,255,0.04) 4px,
+        rgba(255,255,255,0.05) 0px,
+        rgba(255,255,255,0.05) 4px,
         rgba(255,255,255,0.01) 4px,
         rgba(255,255,255,0.01) 8px
-    );
-    color: rgba(255,255,255,0.35);
-    font-size: 11px;
+    ) !important;
+    color: rgba(255,255,255,0.28);
+    font-size: 10px;
 }
 
-/* ── Active (currently executing) block ─────────────────────────────── */
+/* Active block: pulse glow + sheen sweep */
 @keyframes gantt-pulse {
-    0%   { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.6), 0 0 12px rgba(255,255,255,0.25); }
-    50%  { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.2), 0 0 4px  rgba(255,255,255,0.08); }
-    100% { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.6), 0 0 12px rgba(255,255,255,0.25); }
+    0%,100% { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.65), 0 0 12px rgba(255,255,255,0.2); }
+    50%      { box-shadow: inset 0 0 0 2px rgba(255,255,255,0.15), 0 0  3px rgba(255,255,255,0.05); }
 }
-
 .gantt-block.gantt-active {
     animation: gantt-pulse 0.9s ease-in-out infinite;
-    z-index: 2;
+    z-index: 1;
+    position: relative;
 }
-
-/* Ripple sweep effect on active block */
 .gantt-block.gantt-active::after {
     content: '';
     position: absolute;
-    top: 0; left: -60%;
-    width: 50%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
-    animation: gantt-sweep 1.2s ease-in-out infinite;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.18) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: gantt-sheen 1.2s ease-in-out infinite;
+    pointer-events: none;
+}
+@keyframes gantt-sheen {
+    from { background-position: 200% 0; }
+    to   { background-position: -200% 0; }
 }
 
-@keyframes gantt-sweep {
-    0%   { left: -60%; }
-    100% { left: 120%; }
+/* ── Cursor (absolute px, not %) ────────────────────────────────────── */
+#gantt-cursor {
+    position: absolute;
+    top: -3px;
+    bottom: -3px;
+    width: 2px;
+    background: #ffffff;
+    box-shadow: 0 0 8px 2px rgba(255,255,255,0.5);
+    border-radius: 1px;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 10;
+    /* No transition — it jumps per tick like a real clock */
 }
 
-/* ── Time labels ────────────────────────────────────────────────────── */
-.gantt-labels {
+/* ── Time axis ──────────────────────────────────────────────────────── */
+#gantt-timeline-row {
     position: relative;
-    height: 22px;
-    margin-top: 6px;
+    height: 30px;
+    margin-top: 3px;
+    box-sizing: border-box;
 }
 
-.gantt-label {
+.gantt-time-pip {
     position: absolute;
     transform: translateX(-50%);
-    font-size: 11px;
-    color: rgba(255,255,255,0.45);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+    top: 0;
+}
+
+/* Tick mark */
+.gantt-time-pip::before {
+    content: '';
+    display: block;
+    width: 1px;
+    height: 5px;
+    background: rgba(255,255,255,0.18);
+    margin-bottom: 3px;
+    transition: background 0.1s, height 0.1s;
+}
+
+.gantt-time-num {
+    font-size: 10px;
+    color: rgba(255,255,255,0.3);
     font-variant-numeric: tabular-nums;
+    line-height: 1;
+    transition: color 0.1s, font-weight 0.1s;
     user-select: none;
 }
+.gantt-time-num.minor { opacity: 0; }  /* hide crowded labels, keep tick mark */
 
-.gantt-label-appear {
-    animation: label-pop 0.25s ease forwards;
+/* Active pip */
+.gantt-time-pip.gantt-pip-active::before {
+    background: #ffffff;
+    height: 8px;
 }
-
-@keyframes label-pop {
-    from { opacity: 0; transform: translateX(-50%) translateY(-4px); }
-    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+.gantt-time-pip.gantt-pip-active .gantt-time-num {
+    color: #ffffff !important;
+    font-weight: 800;
+    opacity: 1 !important;
+    font-size: 11px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -129,112 +184,114 @@
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 18px;
-    padding: 12px 16px;
+    gap: 10px;
+    margin-top: 14px;
+    padding: 10px 14px;
     background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 10px;
 }
+.gc-left, .gc-right { display: flex; align-items: center; gap: 8px; }
+.gc-center          { display: flex; align-items: center; gap: 14px; flex: 1; justify-content: center; flex-wrap: wrap; }
 
-.gc-left, .gc-right {
+/* Time display */
+.gc-time-display {
     display: flex;
     align-items: center;
     gap: 8px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 5px 14px;
 }
-
-.gc-center {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex: 1;
-    justify-content: center;
-}
-
-/* ── Buttons ────────────────────────────────────────────────────────── */
-.gc-btn {
-    padding: 6px 14px;
-    border-radius: 6px;
-    border: 1px solid rgba(255,255,255,0.18);
-    background: rgba(255,255,255,0.07);
-    color: rgba(255,255,255,0.85);
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, transform 0.1s;
-    letter-spacing: 0.02em;
-}
-
-.gc-btn:hover:not(:disabled) {
-    background: rgba(255,255,255,0.14);
-    border-color: rgba(255,255,255,0.35);
-    transform: translateY(-1px);
-}
-
-.gc-btn:active:not(:disabled) { transform: translateY(0); }
-
-/* ── CPU Clock display ──────────────────────────────────────────────── */
-.gc-clock-label, .gc-proc-label {
+.gc-time-label {
     font-size: 11px;
-    color: rgba(255,255,255,0.4);
+    color: rgba(255,255,255,0.38);
     text-transform: uppercase;
     letter-spacing: 0.08em;
 }
-
-.gc-clock {
-    font-size: 15px;
-    font-weight: 700;
+.gc-time-val {
+    font-size: 18px;
+    font-weight: 800;
     font-variant-numeric: tabular-nums;
     color: #4CC9F0;
-    letter-spacing: 0.04em;
-    min-width: 56px;
+    min-width: 28px;
+    text-align: center;
+    transition: color 0.2s;
 }
 
+/* Running process */
+.gc-proc-wrap  { display: flex; align-items: center; gap: 7px; }
+.gc-proc-label { font-size: 11px; color: rgba(255,255,255,0.38); text-transform: uppercase; letter-spacing: 0.08em; }
 .gc-proc {
     font-size: 14px;
     font-weight: 700;
-    padding: 3px 10px;
+    padding: 3px 12px;
     border-radius: 6px;
     border: 1.5px solid transparent;
     letter-spacing: 0.05em;
-    transition: color 0.2s, background 0.2s, border-color 0.2s;
-    min-width: 46px;
+    min-width: 52px;
     text-align: center;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
 }
 
-/* ── Speed buttons ──────────────────────────────────────────────────── */
-.gc-speed-label {
-    font-size: 11px;
-    color: rgba(255,255,255,0.4);
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    margin-right: 2px;
+/* Buttons */
+.gc-btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.16);
+    background: rgba(255,255,255,0.07);
+    color: rgba(255,255,255,0.82);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.14s, transform 0.1s;
 }
+.gc-btn:hover:not(:disabled) { background: rgba(255,255,255,0.13); transform: translateY(-1px); }
+.gc-btn:active:not(:disabled){ transform: translateY(0); }
 
+/* Speed buttons */
+.gc-speed-label { font-size: 11px; color: rgba(255,255,255,0.38); text-transform: uppercase; letter-spacing: 0.08em; }
 .gc-speed-btn {
-    padding: 4px 10px;
+    padding: 4px 9px;
     border-radius: 5px;
-    border: 1px solid rgba(255,255,255,0.12);
-    background: rgba(255,255,255,0.05);
-    color: rgba(255,255,255,0.55);
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
+    color: rgba(255,255,255,0.5);
     font-size: 12px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all 0.12s;
+}
+.gc-speed-btn:hover  { background: rgba(255,255,255,0.09); color: rgba(255,255,255,0.85); }
+.gc-speed-btn.active { background: rgba(124,105,255,0.28); border-color: #7C69FF; color: #c4baff; }
+
+/* ── Scrollable process input panel ────────────────────────────────── */
+.glass-panel {
+    max-height: 420px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.15) transparent;
+}
+.glass-panel::-webkit-scrollbar       { width: 5px; }
+.glass-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 3px; }
+
+/* ── Scrollable results table ───────────────────────────────────────── */
+.results-table-wrap {
+    max-height: 320px;
+    overflow-y: auto;
+    border-radius: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.15) transparent;
+}
+.results-table-wrap::-webkit-scrollbar       { width: 5px; }
+.results-table-wrap::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.18); border-radius: 3px; }
+.results-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #1a1a2e;
 }
 
-.gc-speed-btn:hover {
-    background: rgba(255,255,255,0.1);
-    color: rgba(255,255,255,0.85);
-}
-
-.gc-speed-btn.active {
-    background: rgba(124, 105, 255, 0.3);
-    border-color: #7C69FF;
-    color: #c4baff;
-}
-
-/* ── Results table fade-in (animation on finish) ────────────────────── */
-#results-body {
-    transition: opacity 0.5s ease, transform 0.5s ease;
-}
+/* Results body fade-in */
+#results-body { transition: opacity 0.45s ease, transform 0.45s ease; }
