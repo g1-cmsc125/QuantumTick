@@ -1,0 +1,65 @@
+/* --- Gantt Chart Styles --- */
+.gantt-wrapper {
+    margin: 20px 0;
+    width: 100%;
+}
+
+.gantt-chart {
+    display: flex;
+    width: 100%;
+    height: 50px;
+    border: 2px solid #333;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.gantt-block {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid #333;
+    font-weight: bold;
+    color: #fff;
+    /* Transition for a smooth render effect */
+    transition: all 0.3s ease; 
+}
+.gantt-block:last-child {
+    border-right: none;
+}
+
+/* Optional: A special class for idle CPU time */
+.gantt-idle {
+    background-color: transparent !important;
+    color: #888;
+    background-image: repeating-linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.1) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, 0.1) 50%,
+        rgba(255, 255, 255, 0.1) 75%,
+        transparent 75%,
+        transparent
+    );
+    background-size: 10px 10px;
+}
+
+.gantt-labels {
+    display: flex;
+    width: 100%;
+    position: relative;
+    height: 20px;
+    margin-top: 5px;
+    font-size: 0.85rem;
+    color: #aaa;
+}
+
+.gantt-label {
+    position: absolute;
+    transform: translateX(-50%);
+}
+
+#results-panel{
+    margin-top: 30px;
+}

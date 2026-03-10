@@ -1,26 +1,26 @@
 package com.group1;
 
-import java.awt.Font;
+import javafx.application.Application;
+import javafx.geometry.Rectangle2D;
+import javafx.scene.Scene;
+import javafx.stage.Screen;
+import javafx.stage.Stage;
 
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.SwingConstants;
-public class App {
-    public static void main( String[] args ){
-        createAndShowGUI();
+public class App extends Application {
+
+    @Override
+    public void start(Stage stage) {
+        QuantumFrame mainFrame = new QuantumFrame(stage); // <-- pass stage
+
+        Rectangle2D screenBounds = Screen.getPrimary().getVisualBounds();
+        Scene scene = new Scene(mainFrame, screenBounds.getWidth(), screenBounds.getHeight() - 30);
+
+        stage.setScene(scene);
+        stage.setTitle("QuantumTick");
+        stage.show();
     }
 
-    private static void createAndShowGUI() {
-        JFrame frame = new JFrame("QuantumTick - Test App");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(400, 200);
-        frame.setLocationRelativeTo(null); 
-
-        JLabel label = new JLabel("QuantumTick is successfully running!", SwingConstants.CENTER);
-        label.setFont(new Font("Arial", Font.BOLD, 16));
-        
-        frame.add(label);
-        frame.setVisible(true);
+    public static void main(String[] args) {
+        launch(args);
     }
-
 }
