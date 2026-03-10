@@ -12,7 +12,7 @@ import javafx.stage.Stage;
 public class App extends Application {
     @Override
     public void init() throws Exception {
-        Thread.sleep(2000); 
+        Thread.sleep(3000); 
     }
 
     @Override

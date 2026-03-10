@@ -16,19 +16,12 @@ public class QuantumFrame extends StackPane {
 
     public QuantumFrame(Stage stage) {
         bridge = new QuantumBridge(this, stage);
+        
+        // ONLY load the home view initially
         homeView = createWebView("/index.html");
         this.getChildren().add(homeView);
-
-        Platform.runLater(() -> {
-            hiwView = createWebView("/pages/hiw.html");
-            startView = createWebView("/pages/start.html");
-            
-            hiwView.setVisible(false);
-            startView.setVisible(false);
-            
-            this.getChildren().add(0, hiwView);
-            this.getChildren().add(0, startView);
-        });
+        
+        // Removed Platform.runLater. We will lazy-load the other views instead.
     }
 
     private WebView createWebView(String path) {
@@ -52,16 +45,33 @@ public class QuantumFrame extends StackPane {
     }
 
     public void switchView(String viewName) {
-        if (homeView == null || hiwView == null || startView == null) return;
-
-        homeView.setVisible(false);
-        hiwView.setVisible(false);
-        startView.setVisible(false);
+        if (homeView != null) homeView.setVisible(false);
+        if (hiwView != null) hiwView.setVisible(false);
+        if (startView != null) startView.setVisible(false);
 
         switch (viewName) {
-            case "home":  homeView.setVisible(true);  homeView.toFront();  break;
-            case "hiw":   hiwView.setVisible(true);   hiwView.toFront();   break;
-            case "start": startView.setVisible(true); startView.toFront(); break;
+            case "home":  
+                homeView.setVisible(true);  
+                homeView.toFront();  
+                break;
+            case "hiw":   
+                // Lazy Load: Create it only the first time it is needed
+                if (hiwView == null) {
+                    hiwView = createWebView("/pages/hiw.html");
+                    this.getChildren().add(0, hiwView);
+                }
+                hiwView.setVisible(true);   
+                hiwView.toFront();   
+                break;
+            case "start": 
+                // Lazy Load: Create it only the first time it is needed
+                if (startView == null) {
+                    startView = createWebView("/pages/start.html");
+                    this.getChildren().add(0, startView);
+                }
+                startView.setVisible(true); 
+                startView.toFront(); 
+                break;
         }
     }
 
