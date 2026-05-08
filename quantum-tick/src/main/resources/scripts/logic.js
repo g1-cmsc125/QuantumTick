@@ -45,50 +45,65 @@ function getProcessData() {
     }
     return out;
 }
+// Helper function to dim/disable Priority inputs based on Algo
+function togglePriorityUI(isPriority) {
+    const processRows = document.getElementById('process-rows');
+    const prioHeaders = document.querySelectorAll('.pg-header');
+    const prioHeader = prioHeaders[prioHeaders.length - 1]; // The last header is Priority
+
+    if (isPriority) {
+        processRows.classList.remove('prio-disabled');
+        if (prioHeader) prioHeader.classList.remove('prio-disabled');
+    } else {
+        processRows.classList.add('prio-disabled');
+        if (prioHeader) prioHeader.classList.add('prio-disabled');
+    }
+}
 
 algoSelect.addEventListener('change', e => {
+    const isPriority = e.target.value.startsWith('prio');
     quantumContainer.style.display  = e.target.value === 'rr'           ? 'block' : 'none';
-    priorityContainer.style.display = e.target.value.startsWith('prio') ? 'block' : 'none';
+    priorityContainer.style.display = isPriority ? 'block' : 'none';
+    
+    // Disable/Dim Priority column on the UI level
+    togglePriorityUI(isPriority);
 });
 
+// Run this once on load to disable priority fields right away (since the default is FCFS)
+togglePriorityUI(algoSelect.value.startsWith('prio'));
 // To run simulation
 runSimBtn.addEventListener('click', () => {
     const procs = getProcessData();
     const algo = algoSelect.value;
+    const isPriorityAlgo = algo.startsWith('prio');
     const errorDiv = document.getElementById('error-msg');
     
     // Reset error message at the start of every click
-    errorDiv.innerText = '';
+    if (errorDiv) errorDiv.innerText = '';
 
     // Validate number of processes (3-20)
     if (procs.length < 3 || procs.length > 20) {
-        errorDiv.innerText = 'The number of processes should be between 3-20.';
+        errorDiv.innerText = `Invalid Range: Number of processes must be 3-20 (Current: ${procs.length})`;
         return;
     }
 
     // Validate Burst, Arrival, and Priority ranges
-    const priorities = procs.map(p => p.priority);
-    const uniquePriorities = new Set(priorities);
-
     for (let p of procs) {
         if (isNaN(p.burst) || p.burst < 1 || p.burst > 30) {
-            errorDiv.innerText = 'The burst time should be between 1-30.';
+            errorDiv.innerText = `Invalid Range: Process ${p.id} Burst Time must be between 1-30.`;
             return;
         }
         if (isNaN(p.arrival) || p.arrival < 0 || p.arrival > 30) {
-            errorDiv.innerText = 'The arrival time should be between 0-30.';
+            errorDiv.innerText = `Invalid Range: Process ${p.id} Arrival Time must be between 0-30.`;
             return;
         }
-        if (isNaN(p.priority) || p.priority < 1 || p.priority > 20) {
-            errorDiv.innerText = 'The priority number should be between 1-20.';
-            return;
+        // ONLY validate priority if the algorithm uses it
+        if (isPriorityAlgo) {
+            if (isNaN(p.priority) || p.priority < 1 || p.priority > 20) {
+                errorDiv.innerText = `Invalid Range: Process ${p.id} Priority number must be between 1-20.`;
+                return;
+            }
         }
-    }
-
-    // Check for Duplicate Priorities
-    if (uniquePriorities.size !== priorities.length) {
-        errorDiv.innerText = 'Priority numbers must be unique (no duplications).';
-        return;
     }
 
     // Validate quantum time for Round Robin
@@ -98,7 +113,7 @@ runSimBtn.addEventListener('click', () => {
         q = parseInt(quantumInput.value, 10);
 
         if (isNaN(q) || q < 1 || q > 10) {
-            errorDiv.innerText = 'The quantum time must be between 1 and 10.';
+            errorDiv.innerText = 'Invalid Range: Time Quantum must be between 1 and 10.';
             return;
         }
     }
@@ -106,16 +121,12 @@ runSimBtn.addEventListener('click', () => {
     let res;
     switch (algo) {
         case 'fcfs':    res = calculateFCFS(procs); break;
-        case 'rr': {
-            let q = parseInt(document.getElementById('quantum-time').value, 10);
-            if (isNaN(q) || q < 1) q = 1;
-            res = calculateRR(procs, q); break;
-        }
+        case 'rr':      res = calculateRR(procs, q); break;
         case 'sjf-np':  res = calculateSJF_NP(procs); break;
         case 'sjf-p':   res = calculateSJF_P(procs);  break;
         case 'prio-np': res = calculatePriority_NP(procs, document.getElementById('priority-rule').value); break;
         case 'prio-p':  res = calculatePriority_P(procs,  document.getElementById('priority-rule').value); break;
-        default: errorDiv.innerText = 'Algorithm not implemented.'; return;
+        default: if(errorDiv) errorDiv.innerText = 'Algorithm not implemented.'; return;
     }
 
     pendingTable = res.completed.sort((a,b) => parseInt(a.id.slice(1)) - parseInt(b.id.slice(1)));
@@ -190,108 +201,6 @@ function startAnimation(timeline, procs) {
         pip.appendChild(num);
         axis.appendChild(pip);
     }
-
-    algoSelect.addEventListener('change', (e) => {
-            const selected = e.target.value;
-            
-            // Toggle Quantum Time input
-            quantumContainer.style.display = (selected === 'rr') ? 'block' : 'none';
-            
-            // Toggle Priority Rule dropdown
-            priorityContainer.style.display = (selected.startsWith('prio')) ? 'block' : 'none';
-    });
-
-    // Run simulation button click handler (also checks for input validity before running)
-    runSimBtn.addEventListener('click', () => {
-        const processes = getProcessData();
-        const selectedAlgo = algoSelect.value;
-        const errorDisplay = document.getElementById('error-msg'); 
-        let results = [];
-
-        // Clear old message
-        if (errorDisplay) {
-            errorDisplay.innerText = '';
-        }
-
-        // Validate Process Count (3-20)
-        if (processes.length < 3 || processes.length > 20) {
-            errorDisplay.innerText = `Invalid Range: Number of processes must be 3-20 (Current: ${processes.length})`;
-            return;
-        }
-
-        // Validate Data Ranges
-        const priorities = processes.map(p => p.priority);
-        const uniquePriorities = new Set(priorities);
-
-        for (const p of processes) {
-            if (isNaN(p.burst) || p.burst < 1 || p.burst > 30) {
-                errorDisplay.innerText = `Invalid Range: Process ${p.id} Burst Time must be 1-30.`;
-                return;
-            }
-            if (isNaN(p.arrival) || p.arrival < 0 || p.arrival > 30) {
-                errorDisplay.innerText = `Invalid Range: Process ${p.id} Arrival Time must be 0-30.`;
-                return;
-            }
-            if (isNaN(p.priority) || p.priority < 1 || p.priority > 20) {
-                errorDisplay.innerText = `Invalid Range: Process ${p.id} Priority must be 1-20.`;
-                return;
-            }
-        }
-
-        // Duplicate Priority Check
-        if (uniquePriorities.size !== processes.length) {
-            errorDisplay.innerText = 'Invalid Range: Duplicate priority numbers found. Each must be unique.';
-            return;
-        }
-
-        // Time Quantum Check (1-10)
-        if (selectedAlgo === 'rr') {
-            const quantumInput = document.getElementById('quantum-time');
-            const quantum = quantumInput ? parseInt(quantumInput.value, 10) : NaN;
-            if (isNaN(quantum) || quantum < 1 || quantum > 10) {
-                errorDisplay.innerText = 'Invalid Range: Time Quantum must be between 1 and 10.';
-                return;
-            }
-        }
-
-        switch(selectedAlgo) {
-            case 'fcfs':
-                results = calculateFCFS(processes);
-                break;
-            case 'rr': {
-                const quantum = parseInt(document.getElementById('quantum-time').value, 10);
-                results = calculateRR(processes, quantum);
-                break;
-            }
-            case 'sjf-np':
-                results = calculateSJF_NP(processes);
-                break;
-            case 'sjf-p':
-                results = calculateSJF_P(processes);
-                break;
-            case 'prio-np': {
-                let rule = document.getElementById('priority-rule')?.value || 'low-num-high-prio';
-                results = calculatePriority_NP(processes, rule);
-                break;
-            }
-            case 'prio-p': {
-                let rule = document.getElementById('priority-rule')?.value || 'low-num-high-prio';
-                results = calculatePriority_P(processes, rule);
-                break;
-            }
-            default:
-                errorDisplay.innerText = 'Algorithm not implemented yet!';
-                return;
-        }
-
-        // Display results
-        const finalTableData = results.completed.sort((a, b) => 
-            parseInt(a.id.substring(1)) - parseInt(b.id.substring(1))
-        );
-        
-        displayResults(finalTableData);
-        renderGanttChart(results.timeline, processes); 
-    });
 
     // Re-insert into scroll wrapper
     scrollWrap.appendChild(chartEl);
