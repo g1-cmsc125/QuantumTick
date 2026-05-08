@@ -14,6 +14,7 @@ import javafx.stage.StageStyle;
 public class SplashPreloader extends Preloader {
 
     private Stage preloaderStage;
+    
 
     @Override
     public void start(Stage primaryStage) {
@@ -40,8 +41,17 @@ public class SplashPreloader extends Preloader {
 
     @Override
     public void handleStateChangeNotification(StateChangeNotification info) {
-        if (info.getType() == StateChangeNotification.Type.BEFORE_START) {
+        // REMOVED preloaderStage.hide() from here so it doesn't close prematurely!
+    }
+
+    // Inside SplashPreloader.java
+    @Override
+    public void handleApplicationNotification(PreloaderNotification info) {
+        // Listen specifically for our custom event
+        if (info instanceof App.HideSplashEvent) {
             preloaderStage.hide();
         }
     }
+
+
 }

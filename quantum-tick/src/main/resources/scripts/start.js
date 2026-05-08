@@ -75,41 +75,37 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function randomize() {
-    const cells = [...procRows.children];   
-    const rowCount = cells.length / 4;      
+        const cells = [...procRows.children];   
+        const rowCount = cells.length / 4;      
 
-    // Priority pool: unique values from 1 to 20, then shuffled
-    const priorityPool = Array.from({ length: 20 }, (_, i) => i + 1)
-        .sort(() => Math.random() - 0.5);
+        for (let i = 0; i < rowCount; i++) {
+            const offset = i * 4;
+            const burstInput    = cells[offset + 1].querySelector('input');
+            const arrivalInput  = cells[offset + 2].querySelector('input');
+            const priorityInput = cells[offset + 3].querySelector('input');
 
-    for (let i = 0; i < rowCount; i++) {
-        const offset = i * 4;
-        const burstInput    = cells[offset + 1].querySelector('input');
-        const arrivalInput  = cells[offset + 2].querySelector('input');
-        const priorityInput = cells[offset + 3].querySelector('input');
+            // Apply specific ranges
+            const burst    = Math.floor(Math.random() * 30) + 1;  // 1-30
+            const arrival  = Math.floor(Math.random() * 31);      // 0-30
+            const priority = Math.floor(Math.random() * 20) + 1;  // 1-20 (Duplicates allowed)
 
-        // Apply specific ranges
-        const burst    = Math.floor(Math.random() * 30) + 1;  // 1-30
-        const arrival  = Math.floor(Math.random() * 31);       // 0-30
-        const priority = priorityPool[i];                      // 1-20 Unique
+            burstInput.value = burst;
+            arrivalInput.value = arrival;
+            priorityInput.value = priority;
+            
+            // Update datasets for tracking
+            burstInput.dataset.value = String(burst);
+            arrivalInput.dataset.value = String(arrival);
+            priorityInput.dataset.value = String(priority);
+        }
 
-        burstInput.value = burst;
-        arrivalInput.value = arrival;
-        priorityInput.value = priority;
-        
-        // Update datasets for tracking
-        burstInput.dataset.value = String(burst);
-        arrivalInput.dataset.value = String(arrival);
-        priorityInput.dataset.value = String(priority);
+        // Randomize Time Quantum (1-10)
+        const quantumInput = document.getElementById('quantum-time');
+        if (quantumInput) {
+            const randomQuantum = Math.floor(Math.random() * 10) + 1; // 1-10
+            quantumInput.value = randomQuantum;
+        }
     }
-
-    // Randomize Time Quantum (1-10)
-    const quantumInput = document.getElementById('quantum-time');
-    if (quantumInput) {
-        const randomQuantum = Math.floor(Math.random() * 10) + 1; // 1-10
-        quantumInput.value = randomQuantum;
-    }
-}
 
     function upload() {
         try {
@@ -217,21 +213,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert(`Invalid CSV: line ${lineNum} arrival time must be between 0–30, got ${arrival}.`);
                 return;
             }
-            if (prio < 1 || prio > MAX_ROWS) {
-                alert(`Invalid CSV: line ${lineNum} priority must be between 1–${MAX_ROWS}, got ${prio}.`);
+            if (prio < 0 || prio > 20) {
+                alert(`Invalid CSV: line ${lineNum} priority must be between 0–20, got ${prio}.`);
                 return;
             }
 
             parsed.push({ burst, arrival, prio });
-        }
-
-        // Reject duplicate priority numbers
-        const priorities = parsed.map(r => r.prio);
-        const uniquePrios = new Set(priorities);
-        if (uniquePrios.size !== priorities.length) {
-            const dupes = priorities.filter((p, i) => priorities.indexOf(p) !== i);
-            alert(`Invalid CSV: duplicate priority number(s) found: ${[...new Set(dupes)].join(', ')}.`);
-            return;
         }
 
         // All valid: fade out, wipe, repopulate, fade in
@@ -273,5 +260,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // Init: build the default 3 rows with random colors on first load
     populateRows();
 });
-
-
